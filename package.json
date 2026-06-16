@@ -1,0 +1,54 @@
+{
+  "name": "qbrix",
+  "version": "0.0.0",
+  "description": "JavaScript/TypeScript SDK for the Qbrix multi-armed bandit platform — select and feedback in ~10 lines.",
+  "keywords": ["bandit", "mab", "experimentation", "optimization", "ab-testing", "qbrix"],
+  "license": "MIT",
+  "author": "Optiq <hello@qbrix.io>",
+  "homepage": "https://qbrix.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/optiq-io/qbrix-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/optiq-io/qbrix-js/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@changesets/cli": "^2.27.11",
+    "@vitest/coverage-v8": "^2.1.8",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
