@@ -20,4 +20,5 @@ coverage/
 .vscode/
 
 # local tooling
-.claude/
+.claude/*
+!.claude/skills/

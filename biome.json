@@ -21,6 +21,6 @@
     "lineWidth": 100
   },
   "files": {
-    "ignore": ["dist", "coverage", "src/generated.ts"]
+    "ignore": ["dist", "coverage", "src/generated.ts", ".codegraph"]
   }
 }
