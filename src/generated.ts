@@ -1,2 +1,2 @@
-// openapi-typescript output (internal source of truth) — generated in OPT-39.
+// TODO(OPT-39): openapi-typescript output (internal source of truth)
 export {};

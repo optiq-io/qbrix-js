@@ -1,2 +1,2 @@
-// QbrixError hierarchy — implemented in OPT-131.
+// TODO(OPT-131): QbrixError hierarchy
 export {};

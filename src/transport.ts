@@ -1,2 +1,2 @@
-// fetch wrapper: headers, retry/backoff, timeout, error mapping — implemented in OPT-131.
+// TODO(OPT-131): fetch wrapper — retry/backoff, timeout, error mapping
 export {};

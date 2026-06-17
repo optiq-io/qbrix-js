@@ -1,2 +1,2 @@
-// wire (snake_case) <-> public (camelCase) mapping — implemented in OPT-39.
+// TODO(OPT-39): wire (snake_case) <-> public (camelCase) mapping
 export {};
