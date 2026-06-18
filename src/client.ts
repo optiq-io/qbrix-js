@@ -1,5 +1,10 @@
 import type { ResolvedConfig } from "./config";
 import { resolveConfig } from "./config";
+import { QbrixError } from "./errors";
+import type { components } from "./generated";
+import { fromSelectResponse, toFeedbackRequest, toSelectRequest } from "./mapper";
+import { request } from "./transport";
+import type { Context, SelectResult } from "./types";
 import { VERSION } from "./version";
 
 export interface QbrixClientOptions {
@@ -39,5 +44,24 @@ export class QbrixClient {
 
   constructor(options: QbrixClientOptions = {}) {
     this.config = resolveConfig(options);
+  }
+
+  async select(experimentId: string, context: Context): Promise<SelectResult> {
+    const body = toSelectRequest({ experimentId, context });
+    const wire = await request<components["schemas"]["AgentSelectResponse"]>(
+      this.config,
+      "POST",
+      "/api/v1/agent/select",
+      { body },
+    );
+    if (wire === undefined) {
+      throw new QbrixError("qbrix: select returned no response body");
+    }
+    return fromSelectResponse(wire);
+  }
+
+  async feedback(requestId: string, reward: number): Promise<void> {
+    const body = toFeedbackRequest({ requestId, reward });
+    await request(this.config, "POST", "/api/v1/agent/feedback", { body });
   }
 }
