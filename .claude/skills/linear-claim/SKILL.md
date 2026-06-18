@@ -143,7 +143,7 @@ Stage specific files — avoid `git add -A` which can sweep in unrelated changes
 
 ## Step 7 — Open the PR
 
-1. Read `.github/PULL_REQUEST_TEMPLATE.md` from the repo root if it exists and fill every section using the ticket's title and description as source material. If no template exists yet, write a clear hand-written body (Summary / Changes / Testing / Out of scope).
+1. Structure the body with the canonical template at `.github/PULL_REQUEST_TEMPLATE.md` (repo root). `gh pr create` does **not** auto-load it, so read the file and fill every section from the ticket's title/description and the actual diff. For *how* to fill each section in the repo's established voice (conventions extracted from OPT-130/OPT-131), follow [`references/pr-template.md`](references/pr-template.md). Replace every `<placeholder>`, strip the `<!-- -->` guidance comments, and drop the optional **Design notes** section when there's nothing non-obvious to record.
 2. Include any draft follow-up tickets from Step 3.5 in the PR body under "Out of scope / follow-ups".
 3. Create the PR:
 

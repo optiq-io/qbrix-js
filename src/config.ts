@@ -10,6 +10,7 @@ export interface ResolvedConfig {
   headers: Record<string, string>;
 }
 
+// todo: check the defaults / might want to add the hosted url here / update the timeout to be low latency etc.
 const DEFAULTS = {
   baseUrl: "http://localhost:8080",
   timeout: 30_000,
