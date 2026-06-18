@@ -15,6 +15,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run generate
+      - name: check generated types are in sync with the vendored spec
+        run: git diff --exit-code src/generated.ts || (echo "src/generated.ts out of sync — run 'npm run generate' and commit" && exit 1)
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test

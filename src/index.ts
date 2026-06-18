@@ -16,3 +16,11 @@ export {
   QbrixConnectionError,
   QbrixTimeoutError,
 } from "./errors";
+export type {
+  Context,
+  Arm,
+  SelectParams,
+  SelectResult,
+  FeedbackParams,
+  FeedbackResult,
+} from "./types";
