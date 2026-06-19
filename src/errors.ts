@@ -1,3 +1,5 @@
+import type { ErrorCode } from "./types";
+
 export class QbrixError extends Error {
   constructor(message: string) {
     super(message);
@@ -7,16 +9,25 @@ export class QbrixError extends Error {
   }
 }
 
+// `string & {}` keeps autocomplete of the known codes while tolerating codes a
+// newer backend may send before the sdk's generated union catches up.
+interface ApiErrorOptions {
+  code?: ErrorCode | (string & {});
+  context?: Record<string, unknown>;
+}
+
 export class QbrixAPIError extends QbrixError {
   readonly status: number;
   readonly detail: string;
+  readonly code: ErrorCode | (string & {}) | undefined;
   readonly context: Record<string, unknown> | undefined;
 
-  constructor(status: number, detail: string, context?: Record<string, unknown>) {
+  constructor(status: number, detail: string, options?: ApiErrorOptions) {
     super(`[${status}] ${detail}`);
     this.status = status;
     this.detail = detail;
-    this.context = context;
+    this.code = options?.code;
+    this.context = options?.context;
   }
 }
 
@@ -26,17 +37,16 @@ export class ForbiddenError extends QbrixAPIError {}
 export class NotFoundError extends QbrixAPIError {}
 export class ConflictError extends QbrixAPIError {}
 
+interface RateLimitedErrorOptions extends ApiErrorOptions {
+  retryAfter?: number;
+}
+
 export class RateLimitedError extends QbrixAPIError {
   readonly retryAfter: number | undefined;
 
-  constructor(
-    status: number,
-    detail: string,
-    context?: Record<string, unknown>,
-    retryAfter?: number,
-  ) {
-    super(status, detail, context);
-    this.retryAfter = retryAfter;
+  constructor(status: number, detail: string, options?: RateLimitedErrorOptions) {
+    super(status, detail, options);
+    this.retryAfter = options?.retryAfter;
   }
 }
 
@@ -51,7 +61,7 @@ export class QbrixTimeoutError extends QbrixError {}
 type ApiErrorConstructor = new (
   status: number,
   detail: string,
-  context?: Record<string, unknown>,
+  options?: ApiErrorOptions,
 ) => QbrixAPIError;
 
 export const STATUS_TO_ERROR: Record<number, ApiErrorConstructor> = {

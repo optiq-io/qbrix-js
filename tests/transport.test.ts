@@ -89,21 +89,47 @@ describe("request — error mapping", () => {
     expect((err as QbrixAPIError).context).toEqual({ field: "armId" });
   });
 
+  it("parses the error code from the envelope", async () => {
+    const fetchMock = fetchOf(
+      async () =>
+        new Response(JSON.stringify({ code: "INVALID_API_KEY", detail: "nope" }), { status: 401 }),
+    );
+    const config = resolveConfig({ fetch: fetchMock, maxRetries: 0 });
+    const err = (await request(config, "GET", "/x").catch((e) => e)) as AuthenticationError;
+    expect(err).toBeInstanceOf(AuthenticationError);
+    expect(err.code).toBe("INVALID_API_KEY");
+  });
+
+  it("leaves code undefined when the body carries none", async () => {
+    const fetchMock = fetchOf(
+      async () => new Response(JSON.stringify({ detail: "boom" }), { status: 500 }),
+    );
+    const config = resolveConfig({ fetch: fetchMock, maxRetries: 0 });
+    const err = (await request(config, "GET", "/x").catch((e) => e)) as InternalServerError;
+    expect(err.code).toBeUndefined();
+  });
+
   it("falls back to the raw body when it is not json", async () => {
     const fetchMock = fetchOf(async () => new Response("plain text", { status: 400 }));
     const config = resolveConfig({ fetch: fetchMock, maxRetries: 0 });
     const err = (await request(config, "GET", "/x").catch((e) => e)) as QbrixAPIError;
     expect(err).toBeInstanceOf(BadRequestError);
     expect(err.detail).toBe("plain text");
+    expect(err.code).toBeUndefined();
   });
 
-  it("maps 429 to RateLimitedError with retryAfter from the header", async () => {
+  it("maps 429 to RateLimitedError with code and retryAfter", async () => {
     const fetchMock = fetchOf(
-      async () => new Response("{}", { status: 429, headers: { "Retry-After": "3" } }),
+      async () =>
+        new Response(JSON.stringify({ code: "RATE_LIMITED", detail: "slow down" }), {
+          status: 429,
+          headers: { "Retry-After": "3" },
+        }),
     );
     const config = resolveConfig({ fetch: fetchMock, maxRetries: 0 });
     const err = (await request(config, "GET", "/x").catch((e) => e)) as RateLimitedError;
     expect(err).toBeInstanceOf(RateLimitedError);
+    expect(err.code).toBe("RATE_LIMITED");
     expect(err.retryAfter).toBe(3);
   });
 
