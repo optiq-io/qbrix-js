@@ -19,6 +19,7 @@ export {
 export type {
   Context,
   Arm,
+  ErrorCode,
   SelectParams,
   SelectResult,
   FeedbackParams,

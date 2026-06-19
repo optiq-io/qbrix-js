@@ -8,6 +8,7 @@ import {
   RateLimitedError,
   STATUS_TO_ERROR,
 } from "./errors";
+import type { components } from "./generated";
 
 export interface RequestOptions {
   body?: unknown;
@@ -84,15 +85,19 @@ function combineSignals(caller: AbortSignal | undefined, timeout: AbortSignal): 
   return controller.signal;
 }
 
+type WireError = components["schemas"]["ErrorResponse"];
+
 async function makeApiError(response: Response): Promise<QbrixAPIError> {
   // read the body once; fetch streams can't be re-read after JSON.parse fails
   const raw = await response.text();
   let detail = raw || response.statusText;
+  let code: WireError["code"] | undefined;
   let context: Record<string, unknown> | undefined;
   if (raw) {
     try {
-      const parsed = JSON.parse(raw) as { detail?: unknown; context?: unknown };
+      const parsed = JSON.parse(raw) as Partial<WireError>;
       if (typeof parsed.detail === "string") detail = parsed.detail;
+      if (typeof parsed.code === "string") code = parsed.code;
       if (parsed.context && typeof parsed.context === "object") {
         context = parsed.context as Record<string, unknown>;
       }
@@ -105,16 +110,15 @@ async function makeApiError(response: Response): Promise<QbrixAPIError> {
   if (status === 429) {
     const header = response.headers.get("Retry-After");
     const seconds = header ? Number.parseFloat(header) : Number.NaN;
-    return new RateLimitedError(
-      status,
-      detail,
+    return new RateLimitedError(status, detail, {
+      code,
       context,
-      Number.isFinite(seconds) ? seconds : undefined,
-    );
+      retryAfter: Number.isFinite(seconds) ? seconds : undefined,
+    });
   }
 
   const ErrorClass = STATUS_TO_ERROR[status] ?? QbrixAPIError;
-  return new ErrorClass(status, detail, context);
+  return new ErrorClass(status, detail, { code, context });
 }
 
 function retryDelay(attempt: number, error: QbrixAPIError): number {

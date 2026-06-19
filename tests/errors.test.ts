@@ -18,10 +18,14 @@ import {
 } from "../src/errors";
 
 describe("QbrixAPIError", () => {
-  it("carries status, detail, and context", () => {
-    const err = new QbrixAPIError(400, "bad input", { field: "armId" });
+  it("carries status, detail, code, and context", () => {
+    const err = new QbrixAPIError(400, "bad input", {
+      code: "BAD_REQUEST",
+      context: { field: "armId" },
+    });
     expect(err.status).toBe(400);
     expect(err.detail).toBe("bad input");
+    expect(err.code).toBe("BAD_REQUEST");
     expect(err.context).toEqual({ field: "armId" });
   });
 
@@ -29,8 +33,10 @@ describe("QbrixAPIError", () => {
     expect(new QbrixAPIError(404, "missing").message).toBe("[404] missing");
   });
 
-  it("leaves context undefined when not provided", () => {
-    expect(new QbrixAPIError(500, "boom").context).toBeUndefined();
+  it("leaves code and context undefined when not provided", () => {
+    const err = new QbrixAPIError(500, "boom");
+    expect(err.code).toBeUndefined();
+    expect(err.context).toBeUndefined();
   });
 });
 
@@ -58,8 +64,14 @@ describe("error hierarchy", () => {
 
 describe("RateLimitedError", () => {
   it("carries an optional retryAfter", () => {
-    expect(new RateLimitedError(429, "slow down", undefined, 2.5).retryAfter).toBe(2.5);
+    expect(new RateLimitedError(429, "slow down", { retryAfter: 2.5 }).retryAfter).toBe(2.5);
     expect(new RateLimitedError(429, "slow down").retryAfter).toBeUndefined();
+  });
+
+  it("carries code alongside retryAfter", () => {
+    const err = new RateLimitedError(429, "slow down", { code: "RATE_LIMITED", retryAfter: 1 });
+    expect(err.code).toBe("RATE_LIMITED");
+    expect(err.retryAfter).toBe(1);
   });
 });
 
