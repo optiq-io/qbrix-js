@@ -2,6 +2,7 @@ import type { ResolvedConfig } from "./config";
 import { resolveConfig } from "./config";
 import { QbrixError } from "./errors";
 import type { components } from "./generated";
+import type { QbrixLogger } from "./logger";
 import { fromSelectResponse, toFeedbackRequest, toSelectRequest } from "./mapper";
 import { request } from "./transport";
 import type { Context, SelectResult } from "./types";
@@ -22,6 +23,8 @@ export interface QbrixClientOptions {
   fetch?: typeof fetch;
   /** extra headers merged into every request; user headers override the defaults. */
   headers?: Record<string, string>;
+  /** optional debug sink. silent unless provided; never receives secrets. */
+  logger?: QbrixLogger;
 }
 
 export function buildHeaders(config: ResolvedConfig): Record<string, string> {
