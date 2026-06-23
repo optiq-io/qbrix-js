@@ -30,17 +30,17 @@ try {
       name: "esm",
       pkgType: "module",
       runFile: "app.mjs",
-      runSrc: `import { QbrixClient } from "qbrix";\nif (typeof QbrixClient !== "function") throw new Error("esm: QbrixClient is not a constructor");\nnew QbrixClient({ apiKey: "x" });\nconsole.log("esm import ok");\n`,
+      runSrc: `import { QbrixClient } from "@optiqio/qbrix";\nif (typeof QbrixClient !== "function") throw new Error("esm: QbrixClient is not a constructor");\nnew QbrixClient({ apiKey: "x" });\nconsole.log("esm import ok");\n`,
       typeFile: "app.mts",
-      typeSrc: `import { QbrixClient } from "qbrix";\nconst c: QbrixClient = new QbrixClient({ apiKey: "x" });\nvoid c;\n`,
+      typeSrc: `import { QbrixClient } from "@optiqio/qbrix";\nconst c: QbrixClient = new QbrixClient({ apiKey: "x" });\nvoid c;\n`,
     },
     {
       name: "cjs",
       pkgType: "commonjs",
       runFile: "app.cjs",
-      runSrc: `const { QbrixClient } = require("qbrix");\nif (typeof QbrixClient !== "function") throw new Error("cjs: QbrixClient is not a constructor");\nnew QbrixClient({ apiKey: "x" });\nconsole.log("cjs require ok");\n`,
+      runSrc: `const { QbrixClient } = require("@optiqio/qbrix");\nif (typeof QbrixClient !== "function") throw new Error("cjs: QbrixClient is not a constructor");\nnew QbrixClient({ apiKey: "x" });\nconsole.log("cjs require ok");\n`,
       typeFile: "app.cts",
-      typeSrc: `import { QbrixClient } from "qbrix";\nconst c: QbrixClient = new QbrixClient({ apiKey: "x" });\nvoid c;\n`,
+      typeSrc: `import { QbrixClient } from "@optiqio/qbrix";\nconst c: QbrixClient = new QbrixClient({ apiKey: "x" });\nvoid c;\n`,
     },
   ];
 
@@ -55,7 +55,7 @@ try {
     writeFileSync(join(dir, v.runFile), v.runSrc);
     writeFileSync(join(dir, v.typeFile), v.typeSrc);
 
-    // file: install — no registry, no network; mirrors a real `npm install qbrix`.
+    // file: install — no registry, no network; mirrors a real `npm install @optiqio/qbrix`.
     run("npm", ["install", "--no-audit", "--no-fund", "--silent", tarball], dir);
 
     run("node", [v.runFile], dir);

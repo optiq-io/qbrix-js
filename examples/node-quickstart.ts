@@ -5,7 +5,7 @@
 //
 // apiKey and baseUrl fall back to the QBRIX_API_KEY / QBRIX_BASE_URL env vars,
 // so no options are needed when those are set.
-import { QbrixAPIError, QbrixClient } from "qbrix";
+import { QbrixAPIError, QbrixClient } from "@optiqio/qbrix";
 
 async function main(): Promise<void> {
   const qbrix = new QbrixClient();
