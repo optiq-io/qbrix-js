@@ -222,3 +222,49 @@ describe("request — timeout and abort", () => {
     await expect(promise).rejects.not.toBeInstanceOf(QbrixTimeoutError);
   });
 });
+
+describe("request — logging", () => {
+  it("emits attempt and success events, never logging secrets", async () => {
+    const debug = vi.fn();
+    const fetchMock = fetchOf(async () => new Response(JSON.stringify({ ok: 1 }), { status: 200 }));
+    const config = resolveConfig({ fetch: fetchMock, apiKey: "optiq_secret", logger: { debug } });
+    await request(config, "POST", "/api/v1/agent/select", { body: { experiment_id: "e" } });
+
+    const messages = debug.mock.calls.map(([m]) => m);
+    expect(messages).toContain("request attempt");
+    expect(messages).toContain("request succeeded");
+
+    // redaction: neither the api key nor the request body may reach the logger
+    const serialized = JSON.stringify(debug.mock.calls);
+    expect(serialized).not.toContain("optiq_secret");
+    expect(serialized).not.toContain("experiment_id");
+  });
+
+  it("emits retry then failure events when giving up", async () => {
+    vi.useFakeTimers();
+    const debug = vi.fn();
+    const fetchMock = fetchOf(async () => new Response("{}", { status: 503 }));
+    const config = resolveConfig({ fetch: fetchMock, maxRetries: 1, logger: { debug } });
+    const promise = request(config, "GET", "/x");
+    const assertion = expect(promise).rejects.toBeInstanceOf(ServiceUnavailableError);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await assertion;
+
+    const messages = debug.mock.calls.map(([m]) => m);
+    expect(messages).toContain("request retrying");
+    expect(messages).toContain("request failed");
+    const retry = debug.mock.calls.find(([m]) => m === "request retrying")?.[1] as Record<
+      string,
+      unknown
+    >;
+    expect(retry).toMatchObject({ method: "GET", path: "/x", status: 503 });
+    expect(typeof retry.delayMs).toBe("number");
+  });
+
+  it("is silent and harmless when no logger is configured", async () => {
+    const fetchMock = fetchOf(async () => new Response(JSON.stringify({ ok: 1 }), { status: 200 }));
+    const config = resolveConfig({ fetch: fetchMock });
+    expect(config.logger).toBeUndefined();
+    await expect(request(config, "GET", "/x")).resolves.toEqual({ ok: 1 });
+  });
+});

@@ -30,6 +30,12 @@ export async function request<T>(
   const body = options.body === undefined ? undefined : JSON.stringify(options.body);
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    config.logger?.debug("request attempt", {
+      method,
+      path,
+      attempt: attempt + 1,
+      attempts: config.maxRetries + 1,
+    });
     const timeoutSignal = AbortSignal.timeout(config.timeout);
     const signal = combineSignals(options.signal, timeoutSignal);
 
@@ -40,12 +46,15 @@ export async function request<T>(
       // caller-initiated abort takes precedence and propagates unchanged
       if (options.signal?.aborted) throw options.signal.reason ?? err;
       if (timeoutSignal.aborted) {
+        config.logger?.debug("request timed out", { method, path });
         throw new QbrixTimeoutError(`qbrix: request timed out after ${config.timeout}ms`);
       }
+      config.logger?.debug("request connection error", { method, path });
       throw new QbrixConnectionError(err instanceof Error ? err.message : String(err));
     }
 
     if (response.ok) {
+      config.logger?.debug("request succeeded", { method, path, status: response.status });
       if (response.status === 204) return undefined;
       const text = await response.text();
       return text ? (JSON.parse(text) as T) : undefined;
@@ -53,9 +62,18 @@ export async function request<T>(
 
     const error = await makeApiError(response);
     if (!config.retryOn.includes(response.status) || attempt === config.maxRetries) {
+      config.logger?.debug("request failed", { method, path, status: response.status });
       throw error;
     }
-    await sleep(retryDelay(attempt, error), options.signal);
+    const delay = retryDelay(attempt, error);
+    config.logger?.debug("request retrying", {
+      method,
+      path,
+      status: response.status,
+      attempt: attempt + 1,
+      delayMs: Math.round(delay),
+    });
+    await sleep(delay, options.signal);
   }
 
   // unreachable: the final attempt always returns or throws

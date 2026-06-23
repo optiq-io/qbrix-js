@@ -1,4 +1,5 @@
 import type { QbrixClientOptions } from "./client";
+import type { QbrixLogger } from "./logger";
 
 export interface ResolvedConfig {
   apiKey: string | undefined;
@@ -8,6 +9,7 @@ export interface ResolvedConfig {
   retryOn: number[];
   fetch: typeof fetch | undefined;
   headers: Record<string, string>;
+  logger: QbrixLogger | undefined;
 }
 
 // todo: check the defaults / might want to add the hosted url here / update the timeout to be low latency etc.
@@ -35,6 +37,7 @@ export function resolveConfig(options: QbrixClientOptions = {}): ResolvedConfig 
     retryOn: options.retryOn ?? [...DEFAULTS.retryOn],
     fetch: options.fetch,
     headers: options.headers ?? {},
+    logger: options.logger,
   };
 
   if (config.timeout <= 0) {
