@@ -223,37 +223,44 @@ describe("request — timeout and abort", () => {
   });
 });
 
+function loggerSpy() {
+  return { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+}
+
 describe("request — logging", () => {
-  it("emits attempt and success events, never logging secrets", async () => {
-    const debug = vi.fn();
+  it("emits debug attempt + success to an injected logger, never logging secrets", async () => {
+    const logger = loggerSpy();
     const fetchMock = fetchOf(async () => new Response(JSON.stringify({ ok: 1 }), { status: 200 }));
-    const config = resolveConfig({ fetch: fetchMock, apiKey: "optiq_secret", logger: { debug } });
+    const config = resolveConfig({ fetch: fetchMock, apiKey: "optiq_secret", logger });
     await request(config, "POST", "/api/v1/agent/select", { body: { experiment_id: "e" } });
 
-    const messages = debug.mock.calls.map(([m]) => m);
+    const messages = logger.debug.mock.calls.map(([m]) => m);
     expect(messages).toContain("request attempt");
     expect(messages).toContain("request succeeded");
 
     // redaction: neither the api key nor the request body may reach the logger
-    const serialized = JSON.stringify(debug.mock.calls);
+    const serialized = JSON.stringify([
+      ...logger.debug.mock.calls,
+      ...logger.warn.mock.calls,
+      ...logger.error.mock.calls,
+    ]);
     expect(serialized).not.toContain("optiq_secret");
     expect(serialized).not.toContain("experiment_id");
   });
 
-  it("emits retry then failure events when giving up", async () => {
+  it("logs retries at warn and the final give-up at error", async () => {
     vi.useFakeTimers();
-    const debug = vi.fn();
+    const logger = loggerSpy();
     const fetchMock = fetchOf(async () => new Response("{}", { status: 503 }));
-    const config = resolveConfig({ fetch: fetchMock, maxRetries: 1, logger: { debug } });
+    const config = resolveConfig({ fetch: fetchMock, maxRetries: 1, logger });
     const promise = request(config, "GET", "/x");
     const assertion = expect(promise).rejects.toBeInstanceOf(ServiceUnavailableError);
     await vi.advanceTimersByTimeAsync(10_000);
     await assertion;
 
-    const messages = debug.mock.calls.map(([m]) => m);
-    expect(messages).toContain("request retrying");
-    expect(messages).toContain("request failed");
-    const retry = debug.mock.calls.find(([m]) => m === "request retrying")?.[1] as Record<
+    expect(logger.warn.mock.calls.map(([m]) => m)).toContain("request retrying");
+    expect(logger.error.mock.calls.map(([m]) => m)).toContain("request failed");
+    const retry = logger.warn.mock.calls.find(([m]) => m === "request retrying")?.[1] as Record<
       string,
       unknown
     >;
@@ -261,10 +268,26 @@ describe("request — logging", () => {
     expect(typeof retry.delayMs).toBe("number");
   });
 
-  it("is silent and harmless when no logger is configured", async () => {
+  it('respects logLevel: at "warn", debug events are suppressed', async () => {
+    vi.useFakeTimers();
+    const logger = loggerSpy();
+    const fetchMock = fetchOf(async () => new Response("{}", { status: 503 }));
+    const config = resolveConfig({ fetch: fetchMock, maxRetries: 1, logger, logLevel: "warn" });
+    const promise = request(config, "GET", "/x");
+    const assertion = expect(promise).rejects.toBeInstanceOf(ServiceUnavailableError);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await assertion;
+
+    expect(logger.debug).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalled();
+  });
+
+  it("is silent and harmless when no logger and no level are configured", async () => {
     const fetchMock = fetchOf(async () => new Response(JSON.stringify({ ok: 1 }), { status: 200 }));
     const config = resolveConfig({ fetch: fetchMock });
     expect(config.logger).toBeUndefined();
+    expect(config.logLevel).toBe("off");
     await expect(request(config, "GET", "/x")).resolves.toEqual({ ok: 1 });
   });
 });
