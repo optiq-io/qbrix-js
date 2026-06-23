@@ -60,7 +60,3 @@ export interface FeedbackParams {
   requestId: string;
   reward: number;
 }
-
-export interface FeedbackResult {
-  accepted: boolean;
-}
