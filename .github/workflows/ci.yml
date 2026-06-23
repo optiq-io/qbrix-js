@@ -20,7 +20,12 @@ jobs:
         run: git diff --exit-code src/generated.ts || (echo "src/generated.ts out of sync — run 'npm run generate' and commit" && exit 1)
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test
+      - run: npm run coverage
+      - name: upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/coverage-summary.json
       - run: npm run build
 
   smoke:
@@ -47,3 +52,29 @@ jobs:
           bun-version: latest
       - name: bun round trip
         run: bun smoke/round-trip.mjs
+
+  coverage-badge:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+      - name: extract coverage percentage
+        id: cov
+        run: |
+          COV=$(node -e "console.log(Math.round(require('./coverage-summary.json').total.statements.pct))")
+          echo "coverage=$COV" >> "$GITHUB_OUTPUT"
+      - name: update coverage badge gist
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ vars.COVERAGE_GIST_ID }}
+          filename: qbrix-js-coverage.json
+          label: coverage
+          message: ${{ steps.cov.outputs.coverage }}%
+          valColorRange: ${{ steps.cov.outputs.coverage }}
+          minColorRange: 50
+          maxColorRange: 90
