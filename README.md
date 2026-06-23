@@ -4,6 +4,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/qbrix"><img src="https://img.shields.io/npm/v/qbrix.svg?logo=npm&color=cb3837" alt="npm version"></a>
+  <img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/eskinmi/323280689f4d0bb8c6a3e10b31e63c8d/raw/qbrix-js-coverage.json" alt="Coverage">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white" alt="Node >=18">
   <img src="https://img.shields.io/badge/types-included-3178C6?logo=typescript&logoColor=white" alt="TypeScript types included">
