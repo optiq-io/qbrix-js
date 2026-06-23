@@ -31,6 +31,10 @@
   },
   "files": ["dist"],
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "engines": {
     "node": ">=18"
   },
@@ -46,7 +50,11 @@
     "spec:pull": "node scripts/pull-spec.mjs",
     "generate": "openapi-typescript spec/proxysvc.openapi.json -o src/generated.ts",
     "smoke": "node smoke/round-trip.mjs",
-    "smoke:bundle": "node scripts/check-browser-bundle.mjs"
+    "smoke:bundle": "node scripts/check-browser-bundle.mjs",
+    "check:exports": "node scripts/check-package-exports.mjs",
+    "prepublishOnly": "npm run build",
+    "version": "changeset version && npm install --package-lock-only --ignore-scripts",
+    "release": "changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

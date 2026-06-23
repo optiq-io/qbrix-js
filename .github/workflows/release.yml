@@ -1,0 +1,40 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+# never let two release runs race on the same ref
+concurrency: release-${{ github.ref }}
+
+permissions:
+  contents: write # version pr commits, git tags, github release
+  pull-requests: write # open/update the "version packages" pr
+  id-token: write # oidc identity for npm provenance
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      # gate the publish on the same checks ci enforces on prs
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      # with pending changesets this opens/updates the "version packages" pr;
+      # once that pr merges (changesets consumed) it runs `release` to publish.
+      # provenance comes from publishConfig.provenance + id-token: write above.
+      - name: version or publish
+        uses: changesets/action@v1
+        with:
+          version: npm run version
+          publish: npm run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
