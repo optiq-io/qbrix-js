@@ -22,3 +22,28 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
       - run: npm run build
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: node round trip
+        run: npm run smoke
+      - name: browser bundle builds with zero node polyfills
+        run: npm run smoke:bundle
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: deno round trip
+        run: deno run smoke/round-trip.mjs
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: bun round trip
+        run: bun smoke/round-trip.mjs

@@ -43,12 +43,15 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "spec:pull": "node scripts/pull-spec.mjs",
-    "generate": "openapi-typescript spec/proxysvc.openapi.json -o src/generated.ts"
+    "generate": "openapi-typescript spec/proxysvc.openapi.json -o src/generated.ts",
+    "smoke": "node smoke/round-trip.mjs",
+    "smoke:bundle": "node scripts/check-browser-bundle.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@changesets/cli": "^2.27.11",
     "@vitest/coverage-v8": "^2.1.8",
+    "esbuild": "^0.27.7",
     "openapi-typescript": "^7.13.0",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
