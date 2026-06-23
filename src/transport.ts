@@ -9,6 +9,7 @@ import {
   STATUS_TO_ERROR,
 } from "./errors";
 import type { components } from "./generated";
+import { type LogLevel, shouldLog } from "./logger";
 
 export interface RequestOptions {
   body?: unknown;
@@ -17,6 +18,17 @@ export interface RequestOptions {
 
 const RETRY_BASE_DELAY_MS = 500;
 const RETRY_MAX_DELAY_MS = 8_000;
+
+function emit(
+  config: ResolvedConfig,
+  level: Exclude<LogLevel, "off">,
+  message: string,
+  context: Record<string, unknown>,
+): void {
+  if (config.logger && shouldLog(config.logLevel, level)) {
+    config.logger[level](message, context);
+  }
+}
 
 export async function request<T>(
   config: ResolvedConfig,
@@ -30,7 +42,7 @@ export async function request<T>(
   const body = options.body === undefined ? undefined : JSON.stringify(options.body);
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
-    config.logger?.debug("request attempt", {
+    emit(config, "debug", "request attempt", {
       method,
       path,
       attempt: attempt + 1,
@@ -46,15 +58,15 @@ export async function request<T>(
       // caller-initiated abort takes precedence and propagates unchanged
       if (options.signal?.aborted) throw options.signal.reason ?? err;
       if (timeoutSignal.aborted) {
-        config.logger?.debug("request timed out", { method, path });
+        emit(config, "error", "request timed out", { method, path });
         throw new QbrixTimeoutError(`qbrix: request timed out after ${config.timeout}ms`);
       }
-      config.logger?.debug("request connection error", { method, path });
+      emit(config, "error", "request connection error", { method, path });
       throw new QbrixConnectionError(err instanceof Error ? err.message : String(err));
     }
 
     if (response.ok) {
-      config.logger?.debug("request succeeded", { method, path, status: response.status });
+      emit(config, "debug", "request succeeded", { method, path, status: response.status });
       if (response.status === 204) return undefined;
       const text = await response.text();
       return text ? (JSON.parse(text) as T) : undefined;
@@ -62,11 +74,11 @@ export async function request<T>(
 
     const error = await makeApiError(response);
     if (!config.retryOn.includes(response.status) || attempt === config.maxRetries) {
-      config.logger?.debug("request failed", { method, path, status: response.status });
+      emit(config, "error", "request failed", { method, path, status: response.status });
       throw error;
     }
     const delay = retryDelay(attempt, error);
-    config.logger?.debug("request retrying", {
+    emit(config, "warn", "request retrying", {
       method,
       path,
       status: response.status,

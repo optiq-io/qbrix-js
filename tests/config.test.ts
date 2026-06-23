@@ -16,6 +16,8 @@ describe("resolveConfig", () => {
       retryOn: [429, 502, 503, 504],
       fetch: undefined,
       headers: {},
+      logger: undefined,
+      logLevel: "off",
     });
   });
 
@@ -64,5 +66,52 @@ describe("resolveConfig", () => {
 
   it("throws when maxRetries is negative", () => {
     expect(() => resolveConfig({ maxRetries: -1 })).toThrow(/maxRetries must be >= 0/);
+  });
+});
+
+describe("resolveConfig — logging", () => {
+  const noopLogger = {
+    debug: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+  };
+
+  it("is off and silent by default", () => {
+    const config = resolveConfig();
+    expect(config.logLevel).toBe("off");
+    expect(config.logger).toBeUndefined();
+  });
+
+  it("turns on debug + a console sink when QBRIX_DEBUG is set", () => {
+    vi.stubEnv("QBRIX_DEBUG", "1");
+    const config = resolveConfig();
+    expect(config.logLevel).toBe("debug");
+    expect(config.logger).toBeDefined();
+  });
+
+  it("reads a level from QBRIX_LOG", () => {
+    vi.stubEnv("QBRIX_LOG", "warn");
+    const config = resolveConfig();
+    expect(config.logLevel).toBe("warn");
+    expect(config.logger).toBeDefined();
+  });
+
+  it("ignores an invalid QBRIX_LOG value", () => {
+    vi.stubEnv("QBRIX_LOG", "loud");
+    const config = resolveConfig();
+    expect(config.logLevel).toBe("off");
+    expect(config.logger).toBeUndefined();
+  });
+
+  it("prefers the logLevel option over env (option > env > default)", () => {
+    vi.stubEnv("QBRIX_LOG", "error");
+    expect(resolveConfig({ logLevel: "debug" }).logLevel).toBe("debug");
+  });
+
+  it("an injected logger implies debug and is passed through untouched", () => {
+    const config = resolveConfig({ logger: noopLogger });
+    expect(config.logLevel).toBe("debug");
+    expect(config.logger).toBe(noopLogger);
   });
 });

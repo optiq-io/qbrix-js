@@ -76,6 +76,8 @@ See [`examples/edge-route.ts`](examples/edge-route.ts) and [`examples/node-quick
 | `retryOn` | `number[]` | `[429, 502, 503, 504]` | — |
 | `fetch` | `typeof fetch` | runtime global | — |
 | `headers` | `Record<string, string>` | `{}` | — |
+| `logger` | `QbrixLogger` | console (when a level is active) | — |
+| `logLevel` | `LogLevel` | `"off"` | `QBRIX_LOG`, `QBRIX_DEBUG` |
 
 Resolution order per option: explicit argument → environment variable → default.
 
@@ -139,6 +141,32 @@ try {
 - **`QbrixAPIError`** — the proxy returned a non-2xx response. Carries `status`, `detail`, a machine-readable `code`, and optional `context`. Status-specific subclasses: `BadRequestError` (400), `AuthenticationError` (401), `ForbiddenError` (403), `NotFoundError` (404), `ConflictError` (409), `RateLimitedError` (429, adds `retryAfter`), `InternalServerError` (500), `BadGatewayError` (502), `ServiceUnavailableError` (503), `GatewayTimeoutError` (504).
 - **`QbrixConnectionError`** — the request never completed (network failure).
 - **`QbrixTimeoutError`** — the request exceeded `timeout`.
+
+### Logging
+
+The SDK is **silent by default**. Turn on logging by setting `logLevel` (`"debug" | "info" | "warn" | "error" | "off"`), injecting a `logger`, or via the `QBRIX_LOG` / `QBRIX_DEBUG` environment variables — handy for debugging a running deployment without a code change.
+
+```ts
+// route to the console at a chosen verbosity
+new QbrixClient({ apiKey, logLevel: "debug" });
+
+// or plug in your own sink (pino, winston, …) — receives only request metadata
+new QbrixClient({
+  apiKey,
+  logger: {
+    debug: (msg, ctx) => log.debug(ctx, msg),
+    info: (msg, ctx) => log.info(ctx, msg),
+    warn: (msg, ctx) => log.warn(ctx, msg),
+    error: (msg, ctx) => log.error(ctx, msg),
+  },
+});
+```
+
+```bash
+QBRIX_LOG=warn node app.js   # or QBRIX_DEBUG=1 for full debug output
+```
+
+The transport logs each request attempt and success at `debug`, retries at `warn`, and failures (give-up, timeout, connection) at `error`. Log context is limited to method, path, status, and attempt counts — it **never** includes your API key, headers, or request/response bodies.
 
 ## Runtime support
 

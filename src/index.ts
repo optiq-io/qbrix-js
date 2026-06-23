@@ -24,4 +24,4 @@ export type {
   SelectResult,
   FeedbackParams,
 } from "./types";
-export type { QbrixLogger } from "./logger";
+export type { QbrixLogger, LogLevel } from "./logger";

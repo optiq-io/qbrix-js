@@ -2,7 +2,7 @@ import type { ResolvedConfig } from "./config";
 import { resolveConfig } from "./config";
 import { QbrixError } from "./errors";
 import type { components } from "./generated";
-import type { QbrixLogger } from "./logger";
+import type { LogLevel, QbrixLogger } from "./logger";
 import { fromSelectResponse, toFeedbackRequest, toSelectRequest } from "./mapper";
 import { request } from "./transport";
 import type { Context, SelectResult } from "./types";
@@ -23,8 +23,10 @@ export interface QbrixClientOptions {
   fetch?: typeof fetch;
   /** extra headers merged into every request; user headers override the defaults. */
   headers?: Record<string, string>;
-  /** optional debug sink. silent unless provided; never receives secrets. */
+  /** optional log sink; never receives secrets. defaults to a console sink when a level is active. */
   logger?: QbrixLogger;
+  /** logging verbosity. defaults to "off" (silent); also read from QBRIX_LOG / QBRIX_DEBUG. */
+  logLevel?: LogLevel;
 }
 
 export function buildHeaders(config: ResolvedConfig): Record<string, string> {
