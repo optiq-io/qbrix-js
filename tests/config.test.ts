@@ -114,4 +114,22 @@ describe("resolveConfig — logging", () => {
     expect(config.logLevel).toBe("debug");
     expect(config.logger).toBe(noopLogger);
   });
+
+  it("treats a throwing env access as unset (e.g. deno without --allow-env)", () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, "process");
+    Object.defineProperty(globalThis, "process", {
+      configurable: true,
+      get() {
+        throw new Error("Requires env access");
+      },
+    });
+    try {
+      const config = resolveConfig();
+      expect(config.logLevel).toBe("off");
+      expect(config.apiKey).toBeUndefined();
+    } finally {
+      if (original) Object.defineProperty(globalThis, "process", original);
+      else Reflect.deleteProperty(globalThis, "process");
+    }
+  });
 });

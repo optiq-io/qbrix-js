@@ -33,11 +33,17 @@ const DEFAULTS = {
   retryOn: [429, 502, 503, 504] as number[],
 };
 
-// guarded globalThis access keeps the browser bundle clean and avoids needing `@types/node`
+// guarded globalThis access keeps the browser bundle clean and avoids needing `@types/node`.
+// the try/catch matters for deno, where reading `process.env` throws without `--allow-env` —
+// the sdk treats env as unset rather than crashing.
 function readEnv(name: string): string | undefined {
-  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-    ?.env;
-  return env?.[name];
+  try {
+    const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+      ?.env;
+    return env?.[name];
+  } catch {
+    return undefined;
+  }
 }
 
 // precedence per option: explicit arg → env var → default
