@@ -1,10 +1,9 @@
 import type { components } from "./generated";
-import type { FeedbackParams, FeedbackResult, SelectParams, SelectResult } from "./types";
+import type { FeedbackParams, SelectParams, SelectResult } from "./types";
 
 type WireSelectRequest = components["schemas"]["AgentSelectRequest"];
 type WireSelectResponse = components["schemas"]["AgentSelectResponse"];
 type WireFeedbackRequest = components["schemas"]["AgentFeedbackRequest"];
-type WireFeedbackResponse = components["schemas"]["AgentFeedbackResponse"];
 
 export function toSelectRequest(params: SelectParams): WireSelectRequest {
   const { id, vector, metadata } = params.context;
@@ -31,8 +30,4 @@ export function toFeedbackRequest(params: FeedbackParams): WireFeedbackRequest {
     request_id: params.requestId,
     reward: params.reward,
   };
-}
-
-export function fromFeedbackResponse(wire: WireFeedbackResponse): FeedbackResult {
-  return { accepted: wire.accepted };
 }

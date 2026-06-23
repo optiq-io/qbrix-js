@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  fromFeedbackResponse,
-  fromSelectResponse,
-  toFeedbackRequest,
-  toSelectRequest,
-} from "../src/mapper";
+import { fromSelectResponse, toFeedbackRequest, toSelectRequest } from "../src/mapper";
 import type { FeedbackParams, SelectParams } from "../src/types";
 
 describe("select mapping", () => {
@@ -45,9 +40,5 @@ describe("feedback mapping", () => {
   it("maps a feedback request to the snake_case wire shape", () => {
     const params: FeedbackParams = { requestId: "req_abc", reward: 1 };
     expect(toFeedbackRequest(params)).toEqual({ request_id: "req_abc", reward: 1 });
-  });
-
-  it("maps a feedback response to the camelCase public shape", () => {
-    expect(fromFeedbackResponse({ accepted: true })).toEqual({ accepted: true });
   });
 });

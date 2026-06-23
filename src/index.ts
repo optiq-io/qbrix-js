@@ -23,5 +23,4 @@ export type {
   SelectParams,
   SelectResult,
   FeedbackParams,
-  FeedbackResult,
 } from "./types";
