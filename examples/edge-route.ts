@@ -4,7 +4,7 @@
 //
 // the signature is the web-standard (Request) -> (Response) handler used by edge
 // runtimes (vercel, cloudflare workers, deno deploy) and node route handlers.
-import { QbrixAPIError, QbrixClient } from "qbrix";
+import { QbrixAPIError, QbrixClient } from "@optiqio/qbrix";
 
 const qbrix = new QbrixClient({ apiKey: process.env.QBRIX_API_KEY });
 
