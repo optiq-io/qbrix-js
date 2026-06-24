@@ -1,6 +1,6 @@
 {
   "name": "@optiqio/qbrix",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "JavaScript/TypeScript SDK for the Qbrix multi-armed bandit platform — select and feedback in ~10 lines.",
   "keywords": ["bandit", "mab", "experimentation", "optimization", "ab-testing", "qbrix"],
   "license": "MIT",
