@@ -53,7 +53,7 @@
     "smoke:bundle": "node scripts/check-browser-bundle.mjs",
     "check:exports": "node scripts/check-package-exports.mjs",
     "prepublishOnly": "npm run build",
-    "version": "changeset version && npm install --package-lock-only --ignore-scripts",
+    "version": "changeset version && npm install --package-lock-only --ignore-scripts && biome format --write package.json",
     "release": "changeset publish"
   },
   "devDependencies": {
