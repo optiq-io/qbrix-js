@@ -79,6 +79,39 @@ describe("QbrixClient.select", () => {
     });
   });
 
+  it("returns a result with a null requestId for a paused experiment", async () => {
+    // a paused experiment still selects an arm, it just mints no feedback token.
+    // that is a normal response, not an error.
+    const fetchMock = fetchOf(
+      async () =>
+        new Response(JSON.stringify({ ...selectResponse, request_id: null }), { status: 200 }),
+    );
+    const client = new QbrixClient({ fetch: fetchMock, baseUrl: "https://api.test" });
+    const result = await client.select("exp_1", { id: "ctx_1" });
+    expect(result.requestId).toBeNull();
+    expect(result.arm.name).toBe("blue");
+  });
+
+  it("selects with named properties", async () => {
+    const fetchMock = fetchOf(
+      async () => new Response(JSON.stringify(selectResponse), { status: 200 }),
+    );
+    const client = new QbrixClient({ fetch: fetchMock, baseUrl: "https://api.test" });
+    await client.select("exp_1", {
+      id: "ctx_1",
+      properties: { device: "mobile", cartValue: 62.5, returning: true },
+    });
+
+    const [, init] = (fetchMock as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    expect(JSON.parse(init.body as string).context).toEqual({
+      id: "ctx_1",
+      properties: { device: "mobile", cartValue: 62.5, returning: true },
+    });
+  });
+
   it("posts the experiment id and context to the agent select path", async () => {
     const fetchMock = fetchOf(
       async () => new Response(JSON.stringify(selectResponse), { status: 200 }),

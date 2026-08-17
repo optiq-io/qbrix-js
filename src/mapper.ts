@@ -1,3 +1,4 @@
+import { QbrixError } from "./errors";
 import type { components } from "./generated";
 import type { FeedbackParams, SelectParams, SelectResult } from "./types";
 
@@ -6,13 +7,19 @@ type WireSelectResponse = components["schemas"]["AgentSelectResponse"];
 type WireFeedbackRequest = components["schemas"]["AgentFeedbackRequest"];
 
 export function toSelectRequest(params: SelectParams): WireSelectRequest {
-  const { id, vector, metadata } = params.context;
+  const { id, properties, metadata, vector } = params.context;
+  // the server rejects this too, but a plain-js caller gets no type checking and
+  // deserves better than a round trip to find out.
+  if (vector !== undefined && properties !== undefined) {
+    throw new QbrixError("qbrix: send context.vector or context.properties, not both");
+  }
   return {
     experiment_id: params.experimentId,
     context: {
       id,
-      ...(vector !== undefined && { vector }),
+      ...(properties !== undefined && { properties }),
       ...(metadata !== undefined && { metadata }),
+      ...(vector !== undefined && { vector }),
     },
   };
 }
@@ -20,7 +27,8 @@ export function toSelectRequest(params: SelectParams): WireSelectRequest {
 export function fromSelectResponse(wire: WireSelectResponse): SelectResult {
   return {
     arm: { id: wire.arm.id, name: wire.arm.name, index: wire.arm.index },
-    requestId: wire.request_id,
+    // absent for a paused experiment, which mints no feedback token
+    requestId: wire.request_id ?? null,
     isDefault: wire.is_default,
   };
 }

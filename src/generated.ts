@@ -56,6 +56,26 @@ export interface paths {
         patch: operations["update_experiment_api_v1_experiments__experiment_id__patch"];
         trace?: never;
     };
+    "/api/v1/experiments/{experiment_id}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Experiment
+         * @description reset an experiment's learned params back to its configured policy_params.
+         */
+        post: operations["reset_experiment_api_v1_experiments__experiment_id__reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pools": {
         parameters: {
             query?: never;
@@ -178,6 +198,37 @@ export interface paths {
          * @description delete feature gate config for an experiment.
          */
         delete: operations["delete_gate_config_api_v1_gates__experiment_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Patch Gate Config
+         * @description partially update feature gate config for an experiment.
+         *
+         *     a field absent from the body is left as stored — unlike PUT, which replaces
+         *     the whole config.
+         */
+        patch: operations["patch_gate_config_api_v1_gates__experiment_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/gates/{experiment_id}/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Evaluate Gate Config
+         * @description dry-run the gate against a sample context.
+         *
+         *     read-only: nothing is persisted and no selection is recorded. runs the same
+         *     `FeatureGate.decide` the select path uses, so the preview cannot drift from
+         *     live behaviour.
+         */
+        post: operations["evaluate_gate_config_api_v1_gates__experiment_id__evaluate_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -469,6 +520,84 @@ export interface components {
              */
             version: number;
         };
+        /**
+         * GateConfigPatchRequest
+         * @description a partial gate update.
+         *
+         *     a field absent from the request body is left as stored; an explicit null
+         *     clears it. `rules` is replace-in-whole — omit to keep the stored rules, send
+         *     `[]` to remove them.
+         */
+        GateConfigPatchRequest: {
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Rollout Percentage */
+            rollout_percentage?: number | null;
+            /** Default Arm Id */
+            default_arm_id?: string | null;
+            /** Schedule Start */
+            schedule_start?: string | null;
+            /** Schedule End */
+            schedule_end?: string | null;
+            /** Active Hours Start */
+            active_hours_start?: string | null;
+            /** Active Hours End */
+            active_hours_end?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+            /** Rules */
+            rules?: components["schemas"]["RuleRequest"][] | null;
+        };
+        /**
+         * GateEvaluateRequest
+         * @description a sample context to run the gate against, without touching live traffic.
+         */
+        GateEvaluateRequest: {
+            /**
+             * Context Id
+             * @description identifier the rollout hashes on; blank is evaluated as-is
+             * @default
+             */
+            context_id: string;
+            /**
+             * Context Metadata
+             * @description attributes the targeting rules read
+             */
+            context_metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * GateEvaluateResponse
+         * @description the gate's decision for a sample context, and why.
+         *
+         *     `eligible` is true when the bandit would select — i.e. the gate declined to
+         *     force an arm. it is deliberately not a synonym for "passed the rules": a
+         *     context outside the rollout is ineligible even with every rule matching.
+         */
+        GateEvaluateResponse: {
+            /** Eligible */
+            eligible: boolean;
+            /** Reason */
+            reason: string;
+            /** Arm Id */
+            arm_id?: string | null;
+            /** Arm Name */
+            arm_name?: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** In Schedule */
+            in_schedule: boolean;
+            /** In Rollout */
+            in_rollout: boolean;
+            /** Rollout Percentage */
+            rollout_percentage: number;
+            /**
+             * Rules
+             * @default []
+             */
+            rules: components["schemas"]["GateRuleEvaluation"][];
+        };
         /** AgentSelectRequest */
         AgentSelectRequest: {
             /** Experiment Id */
@@ -479,7 +608,7 @@ export interface components {
         AgentSelectResponse: {
             arm: components["schemas"]["ArmModel"];
             /** Request Id */
-            request_id: string;
+            request_id?: string | null;
             /** Is Default */
             is_default: boolean;
         };
@@ -499,7 +628,7 @@ export interface components {
          * ErrorCode
          * @enum {string}
          */
-        ErrorCode: "INTERNAL_ERROR" | "BAD_REQUEST" | "FEEDBACK_FAILED" | "INVALID_POLICY_PARAMS" | "UNAUTHORIZED" | "INVALID_TOKEN" | "INVALID_API_KEY" | "FORBIDDEN" | "INSUFFICIENT_SCOPES" | "PLAN_TIER_REQUIRED" | "LEARNER_EXPERIMENT_DELETE_FORBIDDEN" | "NOT_FOUND" | "POOL_NOT_FOUND" | "EXPERIMENT_NOT_FOUND" | "USER_NOT_FOUND" | "GATE_NOT_FOUND" | "CONFLICT" | "USER_ALREADY_EXISTS" | "API_KEY_LIMIT_REACHED" | "EXPERIMENT_LIMIT_REACHED" | "POOL_HAS_EXPERIMENTS" | "RATE_LIMITED" | "POOL_CREATION_FAILED" | "EXPERIMENT_CREATION_FAILED" | "SELECTION_FAILED" | "SERVICE_UNAVAILABLE";
+        ErrorCode: "INTERNAL_ERROR" | "BAD_REQUEST" | "UNKNOWN_PRICE_ID" | "FEEDBACK_FAILED" | "INVALID_CONTEXT_VECTOR" | "INVALID_CONTEXT_PROPERTIES" | "INVALID_POLICY_PARAMS" | "UNAUTHORIZED" | "INVALID_TOKEN" | "INVALID_API_KEY" | "FORBIDDEN" | "INSUFFICIENT_SCOPES" | "PLAN_TIER_REQUIRED" | "EMAIL_NOT_VERIFIED" | "LEARNER_EXPERIMENT_DELETE_FORBIDDEN" | "NOT_FOUND" | "POOL_NOT_FOUND" | "EXPERIMENT_NOT_FOUND" | "USER_NOT_FOUND" | "GATE_NOT_FOUND" | "CONFLICT" | "USER_ALREADY_EXISTS" | "API_KEY_LIMIT_REACHED" | "EXPERIMENT_LIMIT_REACHED" | "GATE_ALREADY_EXISTS" | "POOL_HAS_EXPERIMENTS" | "CONTEXT_SCHEMA_IMMUTABLE" | "EXPERIMENT_RUNNING" | "RATE_LIMITED" | "USAGE_LIMIT_EXCEEDED" | "POOL_CREATION_FAILED" | "EXPERIMENT_CREATION_FAILED" | "SELECTION_FAILED" | "SERVICE_UNAVAILABLE";
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -584,16 +713,48 @@ export interface components {
             /** Arm Name */
             arm_name?: string | null;
         };
+        /** GateRuleEvaluation */
+        GateRuleEvaluation: {
+            /** Key */
+            key: string;
+            /** Operator */
+            operator: string;
+            /** Value */
+            value: unknown;
+            /** Matched */
+            matched: boolean;
+            /**
+             * Decisive
+             * @default false
+             */
+            decisive: boolean;
+        };
         /** ContextModel */
         ContextModel: {
-            /** Id */
+            /**
+             * Id
+             * @description Stable identifier for the request source, e.g. a user or session id. Drives deterministic feature-gate rollout.
+             */
             id: string;
-            /** Vector */
-            vector?: (number)[] | null;
-            /** Metadata */
+            /**
+             * Properties
+             * @description Named request properties, e.g. {"device": "mobile", "price": 20}. Encoded server-side against the experiment's declared context schema. This is the way to give a contextual strategy features.
+             */
+            properties?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Metadata
+             * @description Free-form key-value pairs for feature-gate targeting. Never read by the strategy itself.
+             */
             metadata?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Vector
+             * @description Pre-encoded feature vector. Escape hatch for callers who already hold their own embeddings; its width must equal the experiment's dim. Prefer `properties` and let qbrix own the encoding.
+             */
+            vector?: (number)[] | null;
         };
         /** ArmModel */
         ArmModel: {
@@ -1061,6 +1222,109 @@ export interface operations {
                 "application/json": components["schemas"]["ExperimentUpdateRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperimentResponse"];
+                };
+            };
+            /** @description bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description service unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reset_experiment_api_v1_experiments__experiment_id__reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                experiment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -2218,6 +2482,220 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description service unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    patch_gate_config_api_v1_gates__experiment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                experiment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GateConfigPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GateConfigResponse"];
+                };
+            };
+            /** @description bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description service unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    evaluate_gate_config_api_v1_gates__experiment_id__evaluate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                experiment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GateEvaluateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GateEvaluateResponse"];
                 };
             };
             /** @description bad request */
