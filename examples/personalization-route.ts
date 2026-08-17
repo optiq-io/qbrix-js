@@ -87,10 +87,9 @@ export async function selectHero(req: Request): Promise<Response> {
   } catch (err) {
     // a rejected context is a 400 with INVALID_CONTEXT_PROPERTIES and a detail
     // naming what went wrong — a value of the wrong type for its declared kind,
-    // or a vector sent alongside properties. note a property name the schema
-    // does not declare is *not* an error: it is ignored, and the declared
-    // properties you did send are encoded as normal. worth logging loudly in
-    // staging; in production, still serve the page.
+    // a name the schema never declared, or a vector sent alongside properties.
+    // an undeclared *value* of a declared categorical is not an error: it lands
+    // in the reserved `other` slot. in production, still serve the page.
     if (err instanceof QbrixAPIError) {
       console.error(`qbrix ${err.status} ${err.code}: ${err.detail}`);
     } else {
