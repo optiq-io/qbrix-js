@@ -90,8 +90,9 @@ select(experimentId: string, context: Context): Promise<SelectResult>
 ```ts
 interface Context {
   id: string;                          // required — a stable user/session identifier
-  vector?: number[];                   // optional feature vector
-  metadata?: Record<string, unknown>;  // optional arbitrary attributes
+  properties?: Record<string, string | number | boolean>;  // named values, encoded server-side
+  metadata?: Record<string, unknown>;  // optional arbitrary attributes (gate rules only)
+  vector?: number[];                   // pre-encoded escape hatch; not with properties
 }
 
 interface SelectResult {
