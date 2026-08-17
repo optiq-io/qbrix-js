@@ -665,6 +665,129 @@
         }
       }
     },
+    "/api/v1/experiments/{experiment_id}/reset": {
+      "post": {
+        "tags": [
+          "experiments"
+        ],
+        "summary": "Reset Experiment",
+        "description": "reset an experiment's learned params back to its configured policy_params.",
+        "operationId": "reset_experiment_api_v1_experiments__experiment_id__reset_post",
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Experiment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/pools": {
       "post": {
         "tags": [
@@ -1935,6 +2058,137 @@
           }
         }
       },
+      "patch": {
+        "tags": [
+          "gates"
+        ],
+        "summary": "Patch Gate Config",
+        "description": "partially update feature gate config for an experiment.\n\na field absent from the body is left as stored — unlike PUT, which replaces\nthe whole config.",
+        "operationId": "patch_gate_config_api_v1_gates__experiment_id__patch",
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Experiment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GateConfigPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateConfigResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": [
           "gates"
@@ -1959,6 +2213,139 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gates/{experiment_id}/evaluate": {
+      "post": {
+        "tags": [
+          "gates"
+        ],
+        "summary": "Evaluate Gate Config",
+        "description": "dry-run the gate against a sample context.\n\nread-only: nothing is persisted and no selection is recorded. runs the same\n`FeatureGate.decide` the select path uses, so the preview cannot drift from\nlive behaviour.",
+        "operationId": "evaluate_gate_config_api_v1_gates__experiment_id__evaluate_post",
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Experiment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GateEvaluateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateEvaluateResponse"
+                }
               }
             }
           },
@@ -2963,6 +3350,203 @@
         ],
         "title": "GateConfigResponse"
       },
+      "GateConfigPatchRequest": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "rollout_percentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rollout Percentage"
+          },
+          "default_arm_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Arm Id"
+          },
+          "schedule_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule Start"
+          },
+          "schedule_end": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule End"
+          },
+          "active_hours_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Hours Start"
+          },
+          "active_hours_end": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Hours End"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "rules": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RuleRequest"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rules"
+          }
+        },
+        "type": "object",
+        "title": "GateConfigPatchRequest",
+        "description": "a partial gate update.\n\na field absent from the request body is left as stored; an explicit null\nclears it. `rules` is replace-in-whole — omit to keep the stored rules, send\n`[]` to remove them."
+      },
+      "GateEvaluateRequest": {
+        "properties": {
+          "context_id": {
+            "type": "string",
+            "title": "Context Id",
+            "description": "identifier the rollout hashes on; blank is evaluated as-is",
+            "default": ""
+          },
+          "context_metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context Metadata",
+            "description": "attributes the targeting rules read"
+          }
+        },
+        "type": "object",
+        "title": "GateEvaluateRequest",
+        "description": "a sample context to run the gate against, without touching live traffic."
+      },
+      "GateEvaluateResponse": {
+        "properties": {
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "arm_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arm Id"
+          },
+          "arm_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arm Name"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "in_schedule": {
+            "type": "boolean",
+            "title": "In Schedule"
+          },
+          "in_rollout": {
+            "type": "boolean",
+            "title": "In Rollout"
+          },
+          "rollout_percentage": {
+            "type": "number",
+            "title": "Rollout Percentage"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/GateRuleEvaluation"
+            },
+            "type": "array",
+            "title": "Rules",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "eligible",
+          "reason",
+          "enabled",
+          "in_schedule",
+          "in_rollout",
+          "rollout_percentage"
+        ],
+        "title": "GateEvaluateResponse",
+        "description": "the gate's decision for a sample context, and why.\n\n`eligible` is true when the bandit would select — i.e. the gate declined to\nforce an arm. it is deliberately not a synonym for \"passed the rules\": a\ncontext outside the rollout is ineligible even with every rule matching."
+      },
       "AgentSelectRequest": {
         "properties": {
           "experiment_id": {
@@ -2986,7 +3570,14 @@
             "$ref": "#/components/schemas/ArmModel"
           },
           "request_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Request Id"
           },
           "is_default": {
@@ -2997,7 +3588,6 @@
         "type": "object",
         "required": [
           "arm",
-          "request_id",
           "is_default"
         ],
         "title": "AgentSelectResponse"
@@ -3044,7 +3634,10 @@
         "enum": [
           "INTERNAL_ERROR",
           "BAD_REQUEST",
+          "UNKNOWN_PRICE_ID",
           "FEEDBACK_FAILED",
+          "INVALID_CONTEXT_VECTOR",
+          "INVALID_CONTEXT_PROPERTIES",
           "INVALID_POLICY_PARAMS",
           "UNAUTHORIZED",
           "INVALID_TOKEN",
@@ -3052,6 +3645,7 @@
           "FORBIDDEN",
           "INSUFFICIENT_SCOPES",
           "PLAN_TIER_REQUIRED",
+          "EMAIL_NOT_VERIFIED",
           "LEARNER_EXPERIMENT_DELETE_FORBIDDEN",
           "NOT_FOUND",
           "POOL_NOT_FOUND",
@@ -3062,8 +3656,12 @@
           "USER_ALREADY_EXISTS",
           "API_KEY_LIMIT_REACHED",
           "EXPERIMENT_LIMIT_REACHED",
+          "GATE_ALREADY_EXISTS",
           "POOL_HAS_EXPERIMENTS",
+          "CONTEXT_SCHEMA_IMMUTABLE",
+          "EXPERIMENT_RUNNING",
           "RATE_LIMITED",
+          "USAGE_LIMIT_EXCEEDED",
           "POOL_CREATION_FAILED",
           "EXPERIMENT_CREATION_FAILED",
           "SELECTION_FAILED",
@@ -3310,11 +3908,70 @@
         ],
         "title": "GateRuleResponse"
       },
+      "GateRuleEvaluation": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "operator": {
+            "type": "string",
+            "title": "Operator"
+          },
+          "value": {
+            "title": "Value"
+          },
+          "matched": {
+            "type": "boolean",
+            "title": "Matched"
+          },
+          "decisive": {
+            "type": "boolean",
+            "title": "Decisive",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "operator",
+          "value",
+          "matched"
+        ],
+        "title": "GateRuleEvaluation"
+      },
       "ContextModel": {
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id"
+            "title": "Id",
+            "description": "Stable identifier for the request source, e.g. a user or session id. Drives deterministic feature-gate rollout."
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Properties",
+            "description": "Named request properties, e.g. {\"device\": \"mobile\", \"price\": 20}. Encoded server-side against the experiment's declared context schema. This is the way to give a contextual strategy features."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Free-form key-value pairs for feature-gate targeting. Never read by the strategy itself."
           },
           "vector": {
             "anyOf": [
@@ -3335,19 +3992,8 @@
                 "type": "null"
               }
             ],
-            "title": "Vector"
-          },
-          "metadata": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata"
+            "title": "Vector",
+            "description": "Pre-encoded feature vector. Escape hatch for callers who already hold their own embeddings; its width must equal the experiment's dim. Prefer `properties` and let qbrix own the encoding."
           }
         },
         "type": "object",
