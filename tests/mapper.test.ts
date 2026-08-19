@@ -70,6 +70,7 @@ describe("select mapping", () => {
       arm: { id: "arm_a", name: "variant a", index: 0 },
       requestId: "req_abc",
       isDefault: false,
+      isFallback: false,
     });
   });
 

@@ -72,13 +72,39 @@ export interface SelectParams {
 
 export interface SelectResult {
   arm: Arm;
-  /** null when the experiment is paused — selection still succeeds and returns an arm,
-   *  but no feedback token is minted, so there is nothing to report an outcome against. */
+  /** null when the experiment is paused, or when `select()` resolved a client-side
+   *  `fallback` — neither case has a server-minted feedback token. */
   requestId: string | null;
+  /** true for a real, server-side gate decision, but also true for a fallback —
+   *  see `isFallback` to tell those two apart. */
   isDefault: boolean;
+  /** true only when `select()` never reached the proxy (timeout, connection error,
+   *  429, or 5xx) and resolved the caller-declared `fallback` arm locally instead
+   *  of throwing. Distinct from `isDefault`, which a real gate decision also sets. */
+  isFallback: boolean;
+}
+
+export interface SelectOptions {
+  /** overrides the client's default timeout (ms) for this call only. */
+  timeout?: number;
+  /** overrides the client's default max retry attempts for this call only. */
+  maxRetries?: number;
+  /** arm to resolve locally, without throwing, when `select` cannot reach the
+   *  proxy (timeout, connection error, 429, or 5xx). Never used for a 4xx —
+   *  those indicate a caller error (bad experiment id, auth, ...) and always
+   *  surface. The returned `SelectResult` has `requestId: null` and
+   *  `isFallback: true`, so `feedback()` on it is a safe no-op. */
+  fallback?: Arm;
 }
 
 export interface FeedbackParams {
   requestId: string;
   reward: number;
+}
+
+export interface FeedbackOptions {
+  /** overrides the client's default timeout (ms) for this call only. */
+  timeout?: number;
+  /** overrides the client's default max retry attempts for this call only. */
+  maxRetries?: number;
 }

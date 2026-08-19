@@ -21,7 +21,9 @@ export type {
   Arm,
   ErrorCode,
   SelectParams,
+  SelectOptions,
   SelectResult,
   FeedbackParams,
+  FeedbackOptions,
 } from "./types";
 export type { QbrixLogger, LogLevel } from "./logger";

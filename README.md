@@ -71,8 +71,8 @@ See [`examples/edge-route.ts`](examples/edge-route.ts) and [`examples/node-quick
 | --- | --- | --- | --- |
 | `apiKey` | `string` | — | `QBRIX_API_KEY` |
 | `baseUrl` | `string` | `http://localhost:8080` | `QBRIX_BASE_URL` |
-| `timeout` | `number` (ms) | `30000` | — |
-| `maxRetries` | `number` | `2` | — |
+| `timeout` | `number` (ms) | `5000` | — |
+| `maxRetries` | `number` | `0` | — |
 | `retryOn` | `number[]` | `[429, 502, 503, 504]` | — |
 | `fetch` | `typeof fetch` | runtime global | — |
 | `headers` | `Record<string, string>` | `{}` | — |
@@ -81,10 +81,10 @@ See [`examples/edge-route.ts`](examples/edge-route.ts) and [`examples/node-quick
 
 Resolution order per option: explicit argument → environment variable → default.
 
-### `select(experimentId, context)`
+### `select(experimentId, context, options?)`
 
 ```ts
-select(experimentId: string, context: Context): Promise<SelectResult>
+select(experimentId: string, context: Context, options?: SelectOptions): Promise<SelectResult>
 ```
 
 ```ts
@@ -95,20 +95,50 @@ interface Context {
   vector?: number[];                   // pre-encoded escape hatch; not with properties
 }
 
+interface SelectOptions {
+  timeout?: number;     // overrides the client's default timeout for this call only
+  maxRetries?: number;  // overrides the client's default max retries for this call only
+  fallback?: Arm;       // arm to resolve locally if the proxy is unreachable — see below
+}
+
 interface SelectResult {
   arm: { id: string; name: string; index: number };
-  requestId: string;   // pass this back into feedback()
-  isDefault: boolean;  // true when the platform returned the fallback arm
+  requestId: string | null;  // null for a paused experiment or a resolved fallback
+  isDefault: boolean;        // true for a real gate decision or a fallback — see isFallback
+  isFallback: boolean;       // true only when select() never reached the proxy
 }
 ```
 
-### `feedback(requestId, reward)`
+### `feedback(requestId, reward, options?)`
 
 ```ts
-feedback(requestId: string, reward: number): Promise<void>
+feedback(requestId: string | null, reward: number, options?: FeedbackOptions): Promise<void>
 ```
 
-Reports the outcome for a prior `select`. `requestId` is the value returned by that `select`; `reward` is the observed signal (e.g. `1` for a conversion, `0` for none — any numeric reward your experiment defines).
+Reports the outcome for a prior `select`. `requestId` is the value returned by that `select`; `reward` is the observed signal (e.g. `1` for a conversion, `0` for none — any numeric reward your experiment defines). A falsy `requestId` (paused experiment or a resolved `fallback`) makes this a safe no-op — there is no server-minted token to report against.
+
+### Handling outages
+
+`select()` sits on your request path, so it should never hang your app for the full default timeout — and it should have somewhere to land if Qbrix is unreachable. Give it a tight per-call `timeout` and a `fallback` arm:
+
+```ts
+const result = await qbrix.select(
+  "homepage-cta",
+  { id: userId },
+  { timeout: 300, fallback: { id: "arm_control", name: "control", index: 0 } },
+);
+
+if (result.isFallback) {
+  // never reached the proxy — arm is your declared fallback, not a gate decision
+}
+
+console.log(`showing: ${result.arm.name}`);
+
+// safe even for a fallback result: requestId is null, so this is a no-op
+await qbrix.feedback(result.requestId, 1.0);
+```
+
+`fallback` only kicks in for availability failures — a timeout, connection error, `429`, or `5xx`. A `4xx` (bad `experiment_id`, auth failure, malformed context) is a real bug and still throws, even with `fallback` set, so it doesn't get hidden behind a fabricated selection.
 
 ### Errors
 
