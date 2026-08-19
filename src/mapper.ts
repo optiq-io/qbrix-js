@@ -30,6 +30,8 @@ export function fromSelectResponse(wire: WireSelectResponse): SelectResult {
     // absent for a paused experiment, which mints no feedback token
     requestId: wire.request_id ?? null,
     isDefault: wire.is_default,
+    // a real wire response is never a client-side fallback
+    isFallback: false,
   };
 }
 

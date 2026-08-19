@@ -223,6 +223,31 @@ describe("request — timeout and abort", () => {
   });
 });
 
+describe("request — per-call overrides", () => {
+  it("a per-call timeout overrides config.timeout for that call only", async () => {
+    const fetchMock = fetchOf(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        }),
+    );
+    // config.timeout is generous; the per-call override is what actually fires
+    const config = resolveConfig({ fetch: fetchMock, timeout: 5_000, maxRetries: 0 });
+    await expect(request(config, "GET", "/x", { timeout: 20 })).rejects.toBeInstanceOf(
+      QbrixTimeoutError,
+    );
+  });
+
+  it("a per-call maxRetries overrides config.maxRetries for that call only", async () => {
+    const fetchMock = fetchOf(async () => new Response("{}", { status: 503 }));
+    const config = resolveConfig({ fetch: fetchMock, maxRetries: 3 });
+    await expect(request(config, "GET", "/x", { maxRetries: 0 })).rejects.toBeInstanceOf(
+      ServiceUnavailableError,
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 function loggerSpy() {
   return { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
 }

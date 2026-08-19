@@ -14,6 +14,10 @@ import { type LogLevel, shouldLog } from "./logger";
 export interface RequestOptions {
   body?: unknown;
   signal?: AbortSignal;
+  /** overrides `config.timeout` for this call only. */
+  timeout?: number;
+  /** overrides `config.maxRetries` for this call only. */
+  maxRetries?: number;
 }
 
 const RETRY_BASE_DELAY_MS = 500;
@@ -40,15 +44,17 @@ export async function request<T>(
   const url = joinUrl(config.baseUrl, path);
   const headers = buildHeaders(config);
   const body = options.body === undefined ? undefined : JSON.stringify(options.body);
+  const timeout = options.timeout ?? config.timeout;
+  const maxRetries = options.maxRetries ?? config.maxRetries;
 
-  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     emit(config, "debug", "request attempt", {
       method,
       path,
       attempt: attempt + 1,
-      attempts: config.maxRetries + 1,
+      attempts: maxRetries + 1,
     });
-    const timeoutSignal = AbortSignal.timeout(config.timeout);
+    const timeoutSignal = AbortSignal.timeout(timeout);
     const signal = combineSignals(options.signal, timeoutSignal);
 
     let response: Response;
@@ -59,7 +65,7 @@ export async function request<T>(
       if (options.signal?.aborted) throw options.signal.reason ?? err;
       if (timeoutSignal.aborted) {
         emit(config, "error", "request timed out", { method, path });
-        throw new QbrixTimeoutError(`qbrix: request timed out after ${config.timeout}ms`);
+        throw new QbrixTimeoutError(`qbrix: request timed out after ${timeout}ms`);
       }
       emit(config, "error", "request connection error", { method, path });
       throw new QbrixConnectionError(err instanceof Error ? err.message : String(err));
@@ -73,7 +79,7 @@ export async function request<T>(
     }
 
     const error = await makeApiError(response);
-    if (!config.retryOn.includes(response.status) || attempt === config.maxRetries) {
+    if (!config.retryOn.includes(response.status) || attempt === maxRetries) {
       emit(config, "error", "request failed", { method, path, status: response.status });
       throw error;
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { QbrixClient, buildHeaders } from "../src/client";
-import { QbrixError, RateLimitedError } from "../src/errors";
+import { NotFoundError, QbrixError, QbrixTimeoutError, RateLimitedError } from "../src/errors";
 
 function fetchOf(impl: (url: string, init: RequestInit) => Promise<Response>) {
   return vi.fn(impl) as unknown as typeof fetch;
@@ -18,7 +18,7 @@ describe("QbrixClient", () => {
     expect(client).toBeInstanceOf(QbrixClient);
     expect(client.config.apiKey).toBe("optiq_test");
     expect(client.config.baseUrl).toBe("http://localhost:8080");
-    expect(client.config.timeout).toBe(30_000);
+    expect(client.config.timeout).toBe(5_000);
   });
 
   it("accepts an injectable fetch", () => {
@@ -76,6 +76,7 @@ describe("QbrixClient.select", () => {
       arm: { id: "arm_1", name: "blue", index: 0 },
       requestId: "req_abc",
       isDefault: false,
+      isFallback: false,
     });
   });
 
@@ -146,6 +147,71 @@ describe("QbrixClient.select", () => {
     expect(err).toBeInstanceOf(RateLimitedError);
     expect(err.retryAfter).toBe(2);
   });
+
+  it("passes a per-call timeout and maxRetries override through to the transport", async () => {
+    const fetchMock = fetchOf(async () => new Response("{}", { status: 503 }));
+    const client = new QbrixClient({ fetch: fetchMock, maxRetries: 3 });
+    await client.select("exp_1", { id: "ctx_1" }, { maxRetries: 0 }).catch(() => undefined);
+    // the per-call override (0), not the client-wide default (3), governs attempts
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+const fallbackArm = { id: "arm_fallback", name: "control", index: 0 };
+
+describe("QbrixClient.select — fallback", () => {
+  it("resolves the fallback arm on timeout instead of throwing", async () => {
+    const fetchMock = fetchOf(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        }),
+    );
+    const client = new QbrixClient({ fetch: fetchMock, timeout: 20, maxRetries: 0 });
+    const result = await client.select("exp_1", { id: "ctx_1" }, { fallback: fallbackArm });
+    expect(result).toEqual({
+      arm: fallbackArm,
+      requestId: null,
+      isDefault: true,
+      isFallback: true,
+    });
+  });
+
+  it("resolves the fallback arm on a connection error", async () => {
+    const fetchMock = fetchOf(async () => {
+      throw new TypeError("fetch failed");
+    });
+    const client = new QbrixClient({ fetch: fetchMock, maxRetries: 0 });
+    const result = await client.select("exp_1", { id: "ctx_1" }, { fallback: fallbackArm });
+    expect(result.isFallback).toBe(true);
+    expect(result.requestId).toBeNull();
+  });
+
+  it("resolves the fallback arm on a 503", async () => {
+    const fetchMock = fetchOf(async () => new Response("{}", { status: 503 }));
+    const client = new QbrixClient({ fetch: fetchMock, maxRetries: 0 });
+    const result = await client.select("exp_1", { id: "ctx_1" }, { fallback: fallbackArm });
+    expect(result.isFallback).toBe(true);
+  });
+
+  it("does not fall back on a 404 — a caller error must still surface", async () => {
+    const fetchMock = fetchOf(async () => new Response("{}", { status: 404 }));
+    const client = new QbrixClient({ fetch: fetchMock, maxRetries: 0 });
+    await expect(
+      client.select("exp_1", { id: "ctx_1" }, { fallback: fallbackArm }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("still rejects on timeout when no fallback is given", async () => {
+    const fetchMock = fetchOf(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        }),
+    );
+    const client = new QbrixClient({ fetch: fetchMock, timeout: 20, maxRetries: 0 });
+    await expect(client.select("exp_1", { id: "ctx_1" })).rejects.toBeInstanceOf(QbrixTimeoutError);
+  });
 });
 
 describe("QbrixClient.feedback", () => {
@@ -168,5 +234,19 @@ describe("QbrixClient.feedback", () => {
     const fetchMock = fetchOf(async () => new Response("{}", { status: 404 }));
     const client = new QbrixClient({ fetch: fetchMock, maxRetries: 0 });
     await expect(client.feedback("req_missing", 1)).rejects.toBeInstanceOf(QbrixError);
+  });
+
+  it("is a no-op for a null requestId (paused experiment or fallback) — never hits the wire", async () => {
+    const fetchMock = fetchOf(async () => new Response("{}", { status: 201 }));
+    const client = new QbrixClient({ fetch: fetchMock });
+    await expect(client.feedback(null, 1)).resolves.toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("is a no-op for an empty-string requestId — never hits the wire", async () => {
+    const fetchMock = fetchOf(async () => new Response("{}", { status: 201 }));
+    const client = new QbrixClient({ fetch: fetchMock });
+    await expect(client.feedback("", 1)).resolves.toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -11,8 +11,8 @@ describe("resolveConfig", () => {
     expect(config).toEqual({
       apiKey: undefined,
       baseUrl: "http://localhost:8080",
-      timeout: 30_000,
-      maxRetries: 2,
+      timeout: 5_000,
+      maxRetries: 0,
       retryOn: [429, 502, 503, 504],
       fetch: undefined,
       headers: {},
