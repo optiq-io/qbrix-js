@@ -140,6 +140,8 @@ await qbrix.feedback(result.requestId, 1.0);
 
 `fallback` only kicks in for availability failures — a timeout, connection error, `429`, or `5xx`. A `4xx` (bad `experiment_id`, auth failure, malformed context) is a real bug and still throws, even with `fallback` set, so it doesn't get hidden behind a fabricated selection.
 
+See [`examples/handling-outages.ts`](examples/handling-outages.ts) for a runnable version, and [qbrix.io/docs/handling-outages](https://qbrix.io/docs/handling-outages) for the full contract.
+
 ### Errors
 
 Every failure throws a typed error from the `QbrixError` hierarchy — catch the ones you care about with `instanceof`.
