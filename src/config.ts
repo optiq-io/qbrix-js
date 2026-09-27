@@ -26,7 +26,7 @@ function resolveLogLevel(option: LogLevel | undefined, hasLogger: boolean): LogL
 }
 
 const DEFAULTS = {
-  baseUrl: "http://localhost:8080",
+  baseUrl: "http://localhost:8000",
   timeout: 5_000,
   maxRetries: 0,
   retryOn: [429, 502, 503, 504] as number[],

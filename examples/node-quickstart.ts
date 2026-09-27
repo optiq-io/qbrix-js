@@ -1,6 +1,6 @@
 // runnable node quickstart: select -> render -> feedback.
 //
-//   QBRIX_API_KEY=optiq_... QBRIX_BASE_URL=http://localhost:8080 \
+//   QBRIX_API_KEY=optiq_... QBRIX_BASE_URL=http://localhost:8000 \
 //     npx tsx examples/node-quickstart.ts
 //
 // apiKey and baseUrl fall back to the QBRIX_API_KEY / QBRIX_BASE_URL env vars,
