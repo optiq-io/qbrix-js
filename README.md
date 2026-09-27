@@ -39,6 +39,27 @@ await qbrix.feedback(requestId, 1.0); // e.g. 1 = converted, 0 = no action
 
 `select` returns the chosen `arm`, a `requestId`, and `isDefault`. The `requestId` is the handle that ties a later `feedback` call back to the decision — hold onto it.
 
+## Connect to your qbrix
+
+qbrix is [open source](https://github.com/optiq-io/qbrix). Run it with the
+[self-hosting guide](https://qbrix.io/docs/self-hosting): `bin/selfhost-init` and
+`docker compose up -d` from the repository, or the Helm chart. Then register in the
+console and create an API key under **Settings → API keys**.
+
+Point the client at your install with `baseUrl` or `QBRIX_BASE_URL`. It is the
+address of the install, not of the API path: the SDK adds `/api/...` itself.
+
+```bash
+export QBRIX_BASE_URL="http://localhost:8000"
+export QBRIX_API_KEY="optiq_..."
+```
+
+| Install | `QBRIX_BASE_URL` |
+|---|---|
+| Docker Compose quickstart | `http://localhost:8000` (or your `CONSOLE_URL` once it's on a real host) |
+| Helm chart | your ingress origin, e.g. `https://qbrix.example.com` |
+| Managed hosting | `https://cloud.qbrix.io` |
+
 ## Use it server-side
 
 > [!IMPORTANT]
