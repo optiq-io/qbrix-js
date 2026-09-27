@@ -17,7 +17,7 @@ describe("QbrixClient", () => {
     const client = new QbrixClient({ apiKey: "optiq_test" });
     expect(client).toBeInstanceOf(QbrixClient);
     expect(client.config.apiKey).toBe("optiq_test");
-    expect(client.config.baseUrl).toBe("http://localhost:8080");
+    expect(client.config.baseUrl).toBe("http://localhost:8000");
     expect(client.config.timeout).toBe(5_000);
   });
 

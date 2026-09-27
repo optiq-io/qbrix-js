@@ -13,7 +13,7 @@
 // edge runtimes (vercel, cloudflare workers, deno deploy) and node route
 // handlers.
 //
-//   QBRIX_API_KEY=optiq_... QBRIX_BASE_URL=http://localhost:8080 \
+//   QBRIX_API_KEY=optiq_... QBRIX_BASE_URL=http://localhost:8000 \
 //     npx tsx examples/checkout-conversion-route.ts
 import { QbrixAPIError, QbrixClient } from "@optiqio/qbrix";
 

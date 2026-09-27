@@ -10,7 +10,7 @@
 //   POST /api/chat  -> encode the request, route it, store the requestId
 //   (later)         -> judge the answer, report the blended reward
 //
-//   QBRIX_API_KEY=optiq_... QBRIX_BASE_URL=http://localhost:8080 \
+//   QBRIX_API_KEY=optiq_... QBRIX_BASE_URL=http://localhost:8000 \
 //     npx tsx examples/llm-routing-route.ts
 import { QbrixAPIError, QbrixClient } from "@optiqio/qbrix";
 

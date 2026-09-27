@@ -16,7 +16,7 @@
 // never seen, and the normalisation of a number into its declared range are all
 // the server's problem.
 //
-//   QBRIX_API_KEY=optiq_... QBRIX_BASE_URL=http://localhost:8080 \
+//   QBRIX_API_KEY=optiq_... QBRIX_BASE_URL=http://localhost:8000 \
 //     npx tsx examples/personalization-route.ts
 import { QbrixAPIError, QbrixClient } from "@optiqio/qbrix";
 

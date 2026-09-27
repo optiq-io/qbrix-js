@@ -21,7 +21,7 @@
 //      server-minted token to report against. Call it unconditionally; don't
 //      guard on isFallback yourself.
 //
-//   QBRIX_API_KEY=optiq_... QBRIX_BASE_URL=http://localhost:8080 \
+//   QBRIX_API_KEY=optiq_... QBRIX_BASE_URL=http://localhost:8000 \
 //     npx tsx examples/handling-outages.ts
 import { QbrixClient } from "@optiqio/qbrix";
 import type { Arm } from "@optiqio/qbrix";

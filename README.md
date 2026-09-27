@@ -91,7 +91,7 @@ See [`examples/edge-route.ts`](examples/edge-route.ts) and [`examples/node-quick
 | Option | Type | Default | Env fallback |
 | --- | --- | --- | --- |
 | `apiKey` | `string` | — | `QBRIX_API_KEY` |
-| `baseUrl` | `string` | `http://localhost:8080` | `QBRIX_BASE_URL` |
+| `baseUrl` | `string` | `http://localhost:8000` | `QBRIX_BASE_URL` |
 | `timeout` | `number` (ms) | `5000` | — |
 | `maxRetries` | `number` | `0` | — |
 | `retryOn` | `number[]` | `[429, 502, 503, 504]` | — |
