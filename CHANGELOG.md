@@ -1,5 +1,15 @@
 # @optiqio/qbrix
 
+## 0.4.0
+
+### Minor Changes
+
+- 335d334: The default `baseUrl` is `http://localhost:8000`, the self-hosted compose gateway, instead of `http://localhost:8080`, the proxy of a `make dev` setup. Against a `make dev` proxy, set `QBRIX_BASE_URL=http://localhost:8080`.
+
+### Patch Changes
+
+- 9badd9a: The README covers connecting to a self-hosted qbrix: `QBRIX_BASE_URL` is the install's origin, without `/api`.
+
 ## 0.3.0
 
 ### Minor Changes
