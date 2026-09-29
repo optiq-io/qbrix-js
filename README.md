@@ -58,7 +58,7 @@ export QBRIX_API_KEY="optiq_..."
 |---|---|
 | Docker Compose quickstart | `http://localhost:8000` (or your `CONSOLE_URL` once it's on a real host) |
 | Helm chart | your ingress origin, e.g. `https://qbrix.example.com` |
-| Managed hosting | `https://cloud.qbrix.io` |
+| Managed hosting | the URL you were given for your deployment |
 
 ## Use it server-side
 
