@@ -1,5 +1,5 @@
 <p align="center">
-  <strong>qbrix</strong> — JavaScript/TypeScript SDK for the <a href="https://qbrix.io">Qbrix</a> platform.
+  <strong>qbrix</strong> — JavaScript/TypeScript SDK for <a href="https://qbrix.io">qbrix</a>, the open-source decision engine.
 </p>
 
 <p align="center">
@@ -12,7 +12,7 @@
 
 ---
 
-A tiny, isomorphic SDK for multi-armed-bandit **selection** and **feedback** — `select` an arm, render it, report a `reward`. Works in the browser, Node 18+, Deno, Bun, and edge runtimes, with **zero runtime dependencies**.
+A tiny, isomorphic SDK for **selection** and **feedback** — `select` an arm, render it, report a `reward`. Works in the browser, Node 18+, Deno, Bun, and edge runtimes, with **zero runtime dependencies**.
 
 ## Install
 
