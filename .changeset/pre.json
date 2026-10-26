@@ -4,5 +4,7 @@
   "initialVersions": {
     "@optiqio/qbrix": "0.4.0"
   },
-  "changesets": []
+  "changesets": [
+    "next-loops-request-path"
+  ]
 }
