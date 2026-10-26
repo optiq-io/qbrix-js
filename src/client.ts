@@ -12,16 +12,20 @@ import {
 } from "./errors";
 import type { components } from "./generated";
 import type { LogLevel, QbrixLogger } from "./logger";
-import { fromSelectResponse, toFeedbackRequest, toSelectRequest } from "./mapper";
+import {
+  fromOutcomeResponse,
+  fromSelectResponse,
+  toOutcomeRequest,
+  toSelectRequest,
+} from "./mapper";
 import { request } from "./transport";
-import type { Context, FeedbackOptions, SelectOptions, SelectResult } from "./types";
+import type { Context, Decision, Outcome, OutcomeOptions, Settings } from "./types";
 import { VERSION } from "./version";
 
-// failures that mean "the proxy is unreachable or unhealthy right now", as opposed
-// to a caller error (bad request, auth, not found, ...). select() only falls back
-// to a caller-declared arm for these — never for errors that indicate the request
-// itself was wrong, since silently swallowing those would hide real bugs behind a
-// fabricated selection.
+// failures that mean "qbrix is unreachable or unhealthy right now", as opposed to a
+// caller error (bad request, auth, unknown loop, ...). select() answers offline only
+// for these — never for errors that indicate the request itself was wrong, since
+// silently swallowing those would hide real bugs behind a fabricated decision.
 const AVAILABILITY_ERRORS = [
   QbrixConnectionError,
   QbrixTimeoutError,
@@ -36,10 +40,10 @@ function isAvailabilityError(err: unknown): boolean {
   return AVAILABILITY_ERRORS.some((ErrorClass) => err instanceof ErrorClass);
 }
 
-export interface QbrixClientOptions {
+export interface QbrixOptions {
   /** qbrix api key (prefix `optiq_`). falls back to `QBRIX_API_KEY`. */
   apiKey?: string;
-  /** base url of the qbrix proxy. falls back to `QBRIX_BASE_URL`. */
+  /** base url of your qbrix install. falls back to `QBRIX_BASE_URL`. */
   baseUrl?: string;
   /** request timeout in milliseconds. */
   timeout?: number;
@@ -72,59 +76,52 @@ export function buildHeaders(config: ResolvedConfig): Record<string, string> {
   return { ...headers, ...config.headers };
 }
 
-export class QbrixClient {
+export class Qbrix {
   readonly config: ResolvedConfig;
 
-  constructor(options: QbrixClientOptions = {}) {
+  constructor(options: QbrixOptions = {}) {
     this.config = resolveConfig(options);
   }
 
-  async select(
-    experimentId: string,
-    context: Context,
-    options: SelectOptions = {},
-  ): Promise<SelectResult> {
-    const body = toSelectRequest({ experimentId, context });
+  async select(loop: string, context: Context, settings: Settings = {}): Promise<Decision> {
+    const body = toSelectRequest(loop, context);
     try {
-      const wire = await request<components["schemas"]["AgentSelectResponse"]>(
+      const wire = await request<components["schemas"]["SelectResponse"]>(
         this.config,
         "POST",
-        "/api/v1/agent/select",
-        { body, timeout: options.timeout, maxRetries: options.maxRetries },
+        "/api/v1/select",
+        { body, timeout: settings.timeout, maxRetries: settings.maxRetries },
       );
       if (wire === undefined) {
         throw new QbrixError("qbrix: select returned no response body");
       }
       return fromSelectResponse(wire);
     } catch (err) {
-      if (options.fallback && isAvailabilityError(err)) {
-        // no server-minted token exists for a locally-resolved fallback, so
-        // feedback() must not send one — mirrors the proxy's own paused-experiment
-        // response, where request_id is also null.
-        return {
-          arm: options.fallback,
-          requestId: null,
-          isDefault: true,
-          isFallback: true,
-        };
+      if (isAvailabilityError(err)) {
+        return { option: settings.offline ?? null, requestId: null, reason: "offline" };
       }
       throw err;
     }
   }
 
-  async feedback(
+  async outcome(
     requestId: string | null,
-    reward: number,
-    options: FeedbackOptions = {},
-  ): Promise<void> {
-    // a null requestId means select() minted no token — a paused experiment, or a
-    // client-side fallback. nothing valid to feed back.
-    if (!requestId) return;
-    const body = toFeedbackRequest({ requestId, reward });
-    await request(this.config, "POST", "/api/v1/agent/feedback", {
-      body,
-      timeout: options.timeout,
-      maxRetries: options.maxRetries,
-    });
+    value: number,
+    options: OutcomeOptions = {},
+  ): Promise<Outcome | null> {
+    if (!requestId) return null;
+    // minted once per call, so every retry of this call counts once on the server
+    const id = options.id ?? crypto.randomUUID();
+    const body = toOutcomeRequest(requestId, value, id, options.at);
+    const wire = await request<components["schemas"]["OutcomeResponse"]>(
+      this.config,
+      "POST",
+      "/api/v1/outcome",
+      { body, timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+    if (wire === undefined) {
+      throw new QbrixError("qbrix: outcome returned no response body");
+    }
+    return fromOutcomeResponse(wire);
   }
 }

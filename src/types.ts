@@ -1,4 +1,4 @@
-// public (camelCase) agent surface, mapped over the snake_case wire shape in mapper.ts.
+// public (camelCase) request-path surface, mapped over the snake_case wire shape in mapper.ts.
 
 // stable, machine-readable error identifier from the proxysvc error envelope —
 // more granular than the http status. hand-authored (not aliased over the generated
@@ -13,6 +13,12 @@ export type ErrorCode =
   | "INVALID_CONTEXT_VECTOR"
   | "INVALID_CONTEXT_PROPERTIES"
   | "INVALID_POLICY_PARAMS"
+  | "INVALID_METRIC"
+  | "INVALID_LOOP"
+  | "INVALID_CONTEXT"
+  | "INVALID_OUTCOME"
+  | "INVALID_REQUEST_ID"
+  | "INVALID_CURSOR"
   | "UNAUTHORIZED"
   | "INVALID_TOKEN"
   | "INVALID_API_KEY"
@@ -20,12 +26,16 @@ export type ErrorCode =
   | "INSUFFICIENT_SCOPES"
   | "PLAN_TIER_REQUIRED"
   | "EMAIL_NOT_VERIFIED"
+  | "SIGNUP_CLOSED"
   | "LEARNER_EXPERIMENT_DELETE_FORBIDDEN"
   | "NOT_FOUND"
   | "POOL_NOT_FOUND"
   | "EXPERIMENT_NOT_FOUND"
   | "USER_NOT_FOUND"
   | "GATE_NOT_FOUND"
+  | "METRIC_NOT_FOUND"
+  | "LOOP_NOT_FOUND"
+  | "CYCLE_NOT_FOUND"
   | "CONFLICT"
   | "USER_ALREADY_EXISTS"
   | "API_KEY_LIMIT_REACHED"
@@ -33,8 +43,16 @@ export type ErrorCode =
   | "GATE_ALREADY_EXISTS"
   | "POOL_HAS_EXPERIMENTS"
   | "CONTEXT_SCHEMA_IMMUTABLE"
+  | "CONTEXT_DIM_IMMUTABLE"
   | "EXPERIMENT_RUNNING"
+  | "METRIC_NAME_TAKEN"
+  | "LOOP_KEY_TAKEN"
+  | "LOOP_NOT_DRAFT"
+  | "LOOP_NOT_PAUSED"
+  | "UNPROCESSABLE_ENTITY"
+  | "INVALID_IDENTITY"
   | "RATE_LIMITED"
+  | "INVITE_LIMIT_EXCEEDED"
   | "USAGE_LIMIT_EXCEEDED"
   | "POOL_CREATION_FAILED"
   | "EXPERIMENT_CREATION_FAILED"
@@ -42,69 +60,65 @@ export type ErrorCode =
   | "SERVICE_UNAVAILABLE";
 
 export interface Context {
-  /** stable identifier for the request source, e.g. a user or session id. drives
-   *  deterministic feature-gate rollout. */
-  id: string;
-  /** named request properties, e.g. `{ device: "mobile", price: 20 }`. encoded
-   *  server-side against the experiment's declared context schema. this is how you
-   *  give a contextual strategy features. */
-  properties?: Record<string, string | number | boolean>;
-  /** free-form pairs for feature-gate targeting. never read by the strategy itself. */
-  metadata?: Record<string, unknown>;
-  /** pre-encoded feature vector; its width must equal the experiment's dim. prefer
-   *  `properties` and let qbrix own the encoding. reach for this when you already hold
-   *  a learned embedding, when the feature is a quantity you derive yourself (a
-   *  similarity score, a model prediction, a PCA component), or when migrating an
-   *  existing contextual experiment that needs byte-identical encoding. */
-  vector?: number[];
+  /** who or what sees the decision: a user, a session, an account. required, and
+   *  stable for as long as its outcome can arrive. */
+  unit: string;
+  /** what the app knows about the request, e.g. `{ device: "mobile", plan: "pro" }`.
+   *  recorded with the decision. */
+  properties?: Record<string, unknown>;
 }
 
-export interface Arm {
-  id: string;
-  name: string;
-  index: number;
+export interface Option {
+  key: string;
+  name?: string;
+  /** what the app renders for this option. */
+  config: Record<string, unknown>;
 }
 
-export interface SelectParams {
-  experimentId: string;
-  context: Context;
-}
+/** why `select` answered as it did. `offline` comes from the sdk itself, when qbrix
+ *  couldn't be reached. */
+export type Reason =
+  | "live"
+  | "committed"
+  | "outside_delivery"
+  | "paused"
+  | "draft"
+  | "retired"
+  | "offline"
+  | (string & {});
 
-export interface SelectResult {
-  arm: Arm;
-  /** null when the experiment is paused, or when `select()` resolved a client-side
-   *  `fallback` — neither case has a server-minted feedback token. */
+export interface Decision {
+  /** null only when qbrix couldn't be reached and no `offline` option was given. */
+  option: Option | null;
+  /** present only when the decision can learn. pass it to `outcome` as it is. */
   requestId: string | null;
-  /** true for a real, server-side gate decision, but also true for a fallback —
-   *  see `isFallback` to tell those two apart. */
-  isDefault: boolean;
-  /** true only when `select()` never reached the proxy (timeout, connection error,
-   *  429, or 5xx) and resolved the caller-declared `fallback` arm locally instead
-   *  of throwing. Distinct from `isDefault`, which a real gate decision also sets. */
-  isFallback: boolean;
+  reason: Reason;
 }
 
-export interface SelectOptions {
+export interface Settings {
+  /** the option to answer with, without throwing, when qbrix can't be reached
+   *  (timeout, connection error, 429, or 5xx). */
+  offline?: Option;
   /** overrides the client's default timeout (ms) for this call only. */
   timeout?: number;
   /** overrides the client's default max retry attempts for this call only. */
   maxRetries?: number;
-  /** arm to resolve locally, without throwing, when `select` cannot reach the
-   *  proxy (timeout, connection error, 429, or 5xx). Never used for a 4xx —
-   *  those indicate a caller error (bad experiment id, auth, ...) and always
-   *  surface. The returned `SelectResult` has `requestId: null` and
-   *  `isFallback: true`, so `feedback()` on it is a safe no-op. */
-  fallback?: Arm;
 }
 
-export interface FeedbackParams {
-  requestId: string;
-  reward: number;
-}
-
-export interface FeedbackOptions {
+export interface OutcomeOptions {
+  /** makes the outcome count once. minted by the sdk when absent, and kept across
+   *  the call's retries. */
+  id?: string;
+  /** when it happened, as a Date or epoch milliseconds. qbrix uses the time it
+   *  receives the outcome when absent. */
+  at?: Date | number;
   /** overrides the client's default timeout (ms) for this call only. */
   timeout?: number;
   /** overrides the client's default max retry attempts for this call only. */
   maxRetries?: number;
+}
+
+export interface Outcome {
+  id: string;
+  at: Date;
 }

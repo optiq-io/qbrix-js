@@ -234,7 +234,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/agent/select": {
+    "/api/v1/select": {
         parameters: {
             query?: never;
             header?: never;
@@ -243,15 +243,18 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Agent Select */
-        post: operations["agent_select_api_v1_agent_select_post"];
+        /**
+         * Select
+         * @description the loop's option for this request, and why.
+         */
+        post: operations["select_api_v1_select_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/agent/feedback": {
+    "/api/v1/outcome": {
         parameters: {
             query?: never;
             header?: never;
@@ -260,8 +263,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Agent Feedback */
-        post: operations["agent_feedback_api_v1_agent_feedback_post"];
+        /**
+         * Outcome
+         * @description an outcome for one decision, recorded for its loop's metric.
+         */
+        post: operations["outcome_api_v1_outcome_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -598,37 +604,58 @@ export interface components {
              */
             rules: components["schemas"]["GateRuleEvaluation"][];
         };
-        /** AgentSelectRequest */
-        AgentSelectRequest: {
-            /** Experiment Id */
-            experiment_id: string;
-            context: components["schemas"]["ContextModel"];
+        /** SelectRequest */
+        SelectRequest: {
+            /** Loop */
+            loop: string;
+            context?: components["schemas"]["SelectContext"];
         };
-        /** AgentSelectResponse */
-        AgentSelectResponse: {
-            arm: components["schemas"]["ArmModel"];
+        /** SelectResponse */
+        SelectResponse: {
+            option: components["schemas"]["SelectedOption"];
             /** Request Id */
             request_id?: string | null;
-            /** Is Default */
-            is_default: boolean;
+            /** Reason */
+            reason: string;
         };
-        /** AgentFeedbackRequest */
-        AgentFeedbackRequest: {
-            /** Request Id */
+        /** OutcomeRequest */
+        OutcomeRequest: {
+            /**
+             * Request Id
+             * @description The request_id select answered with.
+             */
             request_id: string;
-            /** Reward */
-            reward: number;
+            /**
+             * Value
+             * @description The outcome, valid for the loop's metric type.
+             */
+            value: unknown;
+            /**
+             * Id
+             * @description Makes the outcome idempotent: a repeat with the same id counts once. A fresh id when absent.
+             */
+            id?: unknown;
+            /**
+             * At
+             * @description When it happened, ISO 8601 (UTC without an offset). Arrival time when absent.
+             */
+            at?: string | null;
         };
-        /** AgentFeedbackResponse */
-        AgentFeedbackResponse: {
-            /** Accepted */
-            accepted: boolean;
+        /** OutcomeResponse */
+        OutcomeResponse: {
+            /** Id */
+            id: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
         };
         /**
          * ErrorCode
          * @enum {string}
          */
-        ErrorCode: "INTERNAL_ERROR" | "BAD_REQUEST" | "UNKNOWN_PRICE_ID" | "FEEDBACK_FAILED" | "INVALID_CONTEXT_VECTOR" | "INVALID_CONTEXT_PROPERTIES" | "INVALID_POLICY_PARAMS" | "UNAUTHORIZED" | "INVALID_TOKEN" | "INVALID_API_KEY" | "FORBIDDEN" | "INSUFFICIENT_SCOPES" | "PLAN_TIER_REQUIRED" | "EMAIL_NOT_VERIFIED" | "LEARNER_EXPERIMENT_DELETE_FORBIDDEN" | "NOT_FOUND" | "POOL_NOT_FOUND" | "EXPERIMENT_NOT_FOUND" | "USER_NOT_FOUND" | "GATE_NOT_FOUND" | "CONFLICT" | "USER_ALREADY_EXISTS" | "API_KEY_LIMIT_REACHED" | "EXPERIMENT_LIMIT_REACHED" | "GATE_ALREADY_EXISTS" | "POOL_HAS_EXPERIMENTS" | "CONTEXT_SCHEMA_IMMUTABLE" | "EXPERIMENT_RUNNING" | "RATE_LIMITED" | "USAGE_LIMIT_EXCEEDED" | "POOL_CREATION_FAILED" | "EXPERIMENT_CREATION_FAILED" | "SELECTION_FAILED" | "SERVICE_UNAVAILABLE";
+        ErrorCode: "INTERNAL_ERROR" | "BAD_REQUEST" | "UNKNOWN_PRICE_ID" | "FEEDBACK_FAILED" | "INVALID_CONTEXT_VECTOR" | "INVALID_CONTEXT_PROPERTIES" | "INVALID_POLICY_PARAMS" | "INVALID_METRIC" | "INVALID_LOOP" | "INVALID_CONTEXT" | "INVALID_OUTCOME" | "INVALID_REQUEST_ID" | "INVALID_CURSOR" | "UNAUTHORIZED" | "INVALID_TOKEN" | "INVALID_API_KEY" | "FORBIDDEN" | "INSUFFICIENT_SCOPES" | "PLAN_TIER_REQUIRED" | "EMAIL_NOT_VERIFIED" | "SIGNUP_CLOSED" | "LEARNER_EXPERIMENT_DELETE_FORBIDDEN" | "NOT_FOUND" | "POOL_NOT_FOUND" | "EXPERIMENT_NOT_FOUND" | "USER_NOT_FOUND" | "GATE_NOT_FOUND" | "METRIC_NOT_FOUND" | "LOOP_NOT_FOUND" | "CYCLE_NOT_FOUND" | "CONFLICT" | "USER_ALREADY_EXISTS" | "API_KEY_LIMIT_REACHED" | "EXPERIMENT_LIMIT_REACHED" | "GATE_ALREADY_EXISTS" | "POOL_HAS_EXPERIMENTS" | "CONTEXT_SCHEMA_IMMUTABLE" | "CONTEXT_DIM_IMMUTABLE" | "EXPERIMENT_RUNNING" | "METRIC_NAME_TAKEN" | "LOOP_KEY_TAKEN" | "LOOP_NOT_DRAFT" | "LOOP_NOT_PAUSED" | "UNPROCESSABLE_ENTITY" | "INVALID_IDENTITY" | "RATE_LIMITED" | "INVITE_LIMIT_EXCEEDED" | "USAGE_LIMIT_EXCEEDED" | "POOL_CREATION_FAILED" | "EXPERIMENT_CREATION_FAILED" | "SELECTION_FAILED" | "SERVICE_UNAVAILABLE";
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -637,6 +664,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
         /** ArmRequest */
         ArmRequest: {
@@ -729,41 +760,29 @@ export interface components {
              */
             decisive: boolean;
         };
-        /** ContextModel */
-        ContextModel: {
+        /** SelectContext */
+        SelectContext: {
             /**
-             * Id
-             * @description Stable identifier for the request source, e.g. a user or session id. Drives deterministic feature-gate rollout.
+             * Unit
+             * @description Who or what sees the decision: a user, a session, an account. Stable for as long as its outcome can arrive.
              */
-            id: string;
+            unit?: unknown;
             /**
              * Properties
-             * @description Named request properties, e.g. {"device": "mobile", "price": 20}. Encoded server-side against the experiment's declared context schema. This is the way to give a contextual strategy features.
+             * @description What the app knows about the request, e.g. {"device": "mobile"}. Recorded with the decision.
              */
-            properties?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Metadata
-             * @description Free-form key-value pairs for feature-gate targeting. Never read by the strategy itself.
-             */
-            metadata?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Vector
-             * @description Pre-encoded feature vector. Escape hatch for callers who already hold their own embeddings; its width must equal the experiment's dim. Prefer `properties` and let qbrix own the encoding.
-             */
-            vector?: (number)[] | null;
+            properties?: unknown;
         };
-        /** ArmModel */
-        ArmModel: {
-            /** Id */
-            id: string;
+        /** SelectedOption */
+        SelectedOption: {
+            /** Key */
+            key: string;
             /** Name */
             name: string;
-            /** Index */
-            index: number;
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
         };
         /** PolicyParamResponse */
         PolicyParamResponse: {
@@ -2781,7 +2800,7 @@ export interface operations {
             };
         };
     };
-    agent_select_api_v1_agent_select_post: {
+    select_api_v1_select_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -2790,7 +2809,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AgentSelectRequest"];
+                "application/json": components["schemas"]["SelectRequest"];
             };
         };
         responses: {
@@ -2800,7 +2819,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentSelectResponse"];
+                    "application/json": components["schemas"]["SelectResponse"];
                 };
             };
             /** @description bad request */
@@ -2886,7 +2905,7 @@ export interface operations {
             };
         };
     };
-    agent_feedback_api_v1_agent_feedback_post: {
+    outcome_api_v1_outcome_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -2895,17 +2914,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AgentFeedbackRequest"];
+                "application/json": components["schemas"]["OutcomeRequest"];
             };
         };
         responses: {
             /** @description Successful Response */
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentFeedbackResponse"];
+                    "application/json": components["schemas"]["OutcomeResponse"];
                 };
             };
             /** @description bad request */

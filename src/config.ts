@@ -1,4 +1,4 @@
-import type { QbrixClientOptions } from "./client";
+import type { QbrixOptions } from "./client";
 import { type LogLevel, type QbrixLogger, consoleLogger } from "./logger";
 
 export interface ResolvedConfig {
@@ -46,7 +46,7 @@ function readEnv(name: string): string | undefined {
 }
 
 // precedence per option: explicit arg → env var → default
-export function resolveConfig(options: QbrixClientOptions = {}): ResolvedConfig {
+export function resolveConfig(options: QbrixOptions = {}): ResolvedConfig {
   const logLevel = resolveLogLevel(options.logLevel, options.logger !== undefined);
   const config: ResolvedConfig = {
     apiKey: options.apiKey ?? readEnv("QBRIX_API_KEY"),

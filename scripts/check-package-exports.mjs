@@ -30,17 +30,17 @@ try {
       name: "esm",
       pkgType: "module",
       runFile: "app.mjs",
-      runSrc: `import { QbrixClient } from "@optiqio/qbrix";\nif (typeof QbrixClient !== "function") throw new Error("esm: QbrixClient is not a constructor");\nnew QbrixClient({ apiKey: "x" });\nconsole.log("esm import ok");\n`,
+      runSrc: `import { Qbrix } from "@optiqio/qbrix";\nif (typeof Qbrix !== "function") throw new Error("esm: Qbrix is not a constructor");\nnew Qbrix({ apiKey: "x" });\nconsole.log("esm import ok");\n`,
       typeFile: "app.mts",
-      typeSrc: `import { QbrixClient } from "@optiqio/qbrix";\nconst c: QbrixClient = new QbrixClient({ apiKey: "x" });\nvoid c;\n`,
+      typeSrc: `import { Qbrix } from "@optiqio/qbrix";\nconst c: Qbrix = new Qbrix({ apiKey: "x" });\nvoid c;\n`,
     },
     {
       name: "cjs",
       pkgType: "commonjs",
       runFile: "app.cjs",
-      runSrc: `const { QbrixClient } = require("@optiqio/qbrix");\nif (typeof QbrixClient !== "function") throw new Error("cjs: QbrixClient is not a constructor");\nnew QbrixClient({ apiKey: "x" });\nconsole.log("cjs require ok");\n`,
+      runSrc: `const { Qbrix } = require("@optiqio/qbrix");\nif (typeof Qbrix !== "function") throw new Error("cjs: Qbrix is not a constructor");\nnew Qbrix({ apiKey: "x" });\nconsole.log("cjs require ok");\n`,
       typeFile: "app.cts",
-      typeSrc: `import { QbrixClient } from "@optiqio/qbrix";\nconst c: QbrixClient = new QbrixClient({ apiKey: "x" });\nvoid c;\n`,
+      typeSrc: `import { Qbrix } from "@optiqio/qbrix";\nconst c: Qbrix = new Qbrix({ apiKey: "x" });\nvoid c;\n`,
     },
   ];
 
