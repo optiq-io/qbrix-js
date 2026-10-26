@@ -3,7 +3,7 @@
   "info": {
     "title": "Qbrix API ",
     "description": "Variant Optimisation Platform",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "paths": {
     "/api/v1/experiments": {
@@ -2442,18 +2442,19 @@
         }
       }
     },
-    "/api/v1/agent/select": {
+    "/api/v1/select": {
       "post": {
         "tags": [
-          "agent"
+          "select"
         ],
-        "summary": "Agent Select",
-        "operationId": "agent_select_api_v1_agent_select_post",
+        "summary": "Select",
+        "description": "the loop's option for this request, and why.",
+        "operationId": "select_api_v1_select_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AgentSelectRequest"
+                "$ref": "#/components/schemas/SelectRequest"
               }
             }
           },
@@ -2465,7 +2466,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentSelectResponse"
+                  "$ref": "#/components/schemas/SelectResponse"
                 }
               }
             }
@@ -2563,30 +2564,31 @@
         }
       }
     },
-    "/api/v1/agent/feedback": {
+    "/api/v1/outcome": {
       "post": {
         "tags": [
-          "agent"
+          "outcome"
         ],
-        "summary": "Agent Feedback",
-        "operationId": "agent_feedback_api_v1_agent_feedback_post",
+        "summary": "Outcome",
+        "description": "an outcome for one decision, recorded for its loop's metric.",
+        "operationId": "outcome_api_v1_outcome_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AgentFeedbackRequest"
+                "$ref": "#/components/schemas/OutcomeRequest"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "201": {
+          "202": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentFeedbackResponse"
+                  "$ref": "#/components/schemas/OutcomeResponse"
                 }
               }
             }
@@ -3547,27 +3549,26 @@
         "title": "GateEvaluateResponse",
         "description": "the gate's decision for a sample context, and why.\n\n`eligible` is true when the bandit would select — i.e. the gate declined to\nforce an arm. it is deliberately not a synonym for \"passed the rules\": a\ncontext outside the rollout is ineligible even with every rule matching."
       },
-      "AgentSelectRequest": {
+      "SelectRequest": {
         "properties": {
-          "experiment_id": {
+          "loop": {
             "type": "string",
-            "title": "Experiment Id"
+            "title": "Loop"
           },
           "context": {
-            "$ref": "#/components/schemas/ContextModel"
+            "$ref": "#/components/schemas/SelectContext"
           }
         },
         "type": "object",
         "required": [
-          "experiment_id",
-          "context"
+          "loop"
         ],
-        "title": "AgentSelectRequest"
+        "title": "SelectRequest"
       },
-      "AgentSelectResponse": {
+      "SelectResponse": {
         "properties": {
-          "arm": {
-            "$ref": "#/components/schemas/ArmModel"
+          "option": {
+            "$ref": "#/components/schemas/SelectedOption"
           },
           "request_id": {
             "anyOf": [
@@ -3580,55 +3581,72 @@
             ],
             "title": "Request Id"
           },
-          "is_default": {
-            "type": "boolean",
-            "title": "Is Default"
+          "reason": {
+            "type": "string",
+            "title": "Reason"
           }
         },
         "type": "object",
         "required": [
-          "arm",
-          "is_default"
+          "option",
+          "reason"
         ],
-        "title": "AgentSelectResponse"
+        "title": "SelectResponse"
       },
-      "AgentFeedbackRequest": {
+      "OutcomeRequest": {
         "properties": {
           "request_id": {
             "type": "string",
-            "title": "Request Id"
+            "title": "Request Id",
+            "description": "The request_id select answered with."
           },
-          "reward": {
+          "value": {
+            "title": "Value",
+            "description": "The outcome, valid for the loop's metric type."
+          },
+          "id": {
+            "title": "Id",
+            "description": "Makes the outcome idempotent: a repeat with the same id counts once. A fresh id when absent."
+          },
+          "at": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string",
+                "format": "date-time"
               },
               {
-                "type": "number"
+                "type": "null"
               }
             ],
-            "title": "Reward"
+            "title": "At",
+            "description": "When it happened, ISO 8601 (UTC without an offset). Arrival time when absent."
           }
         },
         "type": "object",
         "required": [
           "request_id",
-          "reward"
+          "value"
         ],
-        "title": "AgentFeedbackRequest"
+        "title": "OutcomeRequest"
       },
-      "AgentFeedbackResponse": {
+      "OutcomeResponse": {
         "properties": {
-          "accepted": {
-            "type": "boolean",
-            "title": "Accepted"
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
           }
         },
         "type": "object",
         "required": [
-          "accepted"
+          "id",
+          "at"
         ],
-        "title": "AgentFeedbackResponse"
+        "title": "OutcomeResponse"
       },
       "ErrorCode": {
         "enum": [
@@ -3639,6 +3657,12 @@
           "INVALID_CONTEXT_VECTOR",
           "INVALID_CONTEXT_PROPERTIES",
           "INVALID_POLICY_PARAMS",
+          "INVALID_METRIC",
+          "INVALID_LOOP",
+          "INVALID_CONTEXT",
+          "INVALID_OUTCOME",
+          "INVALID_REQUEST_ID",
+          "INVALID_CURSOR",
           "UNAUTHORIZED",
           "INVALID_TOKEN",
           "INVALID_API_KEY",
@@ -3646,12 +3670,16 @@
           "INSUFFICIENT_SCOPES",
           "PLAN_TIER_REQUIRED",
           "EMAIL_NOT_VERIFIED",
+          "SIGNUP_CLOSED",
           "LEARNER_EXPERIMENT_DELETE_FORBIDDEN",
           "NOT_FOUND",
           "POOL_NOT_FOUND",
           "EXPERIMENT_NOT_FOUND",
           "USER_NOT_FOUND",
           "GATE_NOT_FOUND",
+          "METRIC_NOT_FOUND",
+          "LOOP_NOT_FOUND",
+          "CYCLE_NOT_FOUND",
           "CONFLICT",
           "USER_ALREADY_EXISTS",
           "API_KEY_LIMIT_REACHED",
@@ -3659,8 +3687,16 @@
           "GATE_ALREADY_EXISTS",
           "POOL_HAS_EXPERIMENTS",
           "CONTEXT_SCHEMA_IMMUTABLE",
+          "CONTEXT_DIM_IMMUTABLE",
           "EXPERIMENT_RUNNING",
+          "METRIC_NAME_TAKEN",
+          "LOOP_KEY_TAKEN",
+          "LOOP_NOT_DRAFT",
+          "LOOP_NOT_PAUSED",
+          "UNPROCESSABLE_ENTITY",
+          "INVALID_IDENTITY",
           "RATE_LIMITED",
+          "INVITE_LIMIT_EXCEEDED",
           "USAGE_LIMIT_EXCEEDED",
           "POOL_CREATION_FAILED",
           "EXPERIMENT_CREATION_FAILED",
@@ -3693,6 +3729,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",
@@ -3940,90 +3983,43 @@
         ],
         "title": "GateRuleEvaluation"
       },
-      "ContextModel": {
+      "SelectContext": {
         "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "Stable identifier for the request source, e.g. a user or session id. Drives deterministic feature-gate rollout."
+          "unit": {
+            "title": "Unit",
+            "description": "Who or what sees the decision: a user, a session, an account. Stable for as long as its outcome can arrive."
           },
           "properties": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
             "title": "Properties",
-            "description": "Named request properties, e.g. {\"device\": \"mobile\", \"price\": 20}. Encoded server-side against the experiment's declared context schema. This is the way to give a contextual strategy features."
-          },
-          "metadata": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata",
-            "description": "Free-form key-value pairs for feature-gate targeting. Never read by the strategy itself."
-          },
-          "vector": {
-            "anyOf": [
-              {
-                "items": {
-                  "anyOf": [
-                    {
-                      "type": "integer"
-                    },
-                    {
-                      "type": "number"
-                    }
-                  ]
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Vector",
-            "description": "Pre-encoded feature vector. Escape hatch for callers who already hold their own embeddings; its width must equal the experiment's dim. Prefer `properties` and let qbrix own the encoding."
+            "description": "What the app knows about the request, e.g. {\"device\": \"mobile\"}. Recorded with the decision."
           }
         },
         "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "ContextModel"
+        "title": "SelectContext"
       },
-      "ArmModel": {
+      "SelectedOption": {
         "properties": {
-          "id": {
+          "key": {
             "type": "string",
-            "title": "Id"
+            "title": "Key"
           },
           "name": {
             "type": "string",
             "title": "Name"
           },
-          "index": {
-            "type": "integer",
-            "title": "Index"
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
           }
         },
         "type": "object",
         "required": [
-          "id",
+          "key",
           "name",
-          "index"
+          "config"
         ],
-        "title": "ArmModel"
+        "title": "SelectedOption"
       },
       "PolicyParamResponse": {
         "properties": {

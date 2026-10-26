@@ -1,5 +1,5 @@
-export { QbrixClient } from "./client";
-export type { QbrixClientOptions } from "./client";
+export { Qbrix } from "./client";
+export type { QbrixOptions } from "./client";
 export {
   QbrixError,
   QbrixAPIError,
@@ -18,12 +18,12 @@ export {
 } from "./errors";
 export type {
   Context,
-  Arm,
+  Option,
+  Reason,
+  Decision,
+  Settings,
+  OutcomeOptions,
+  Outcome,
   ErrorCode,
-  SelectParams,
-  SelectOptions,
-  SelectResult,
-  FeedbackParams,
-  FeedbackOptions,
 } from "./types";
 export type { QbrixLogger, LogLevel } from "./logger";

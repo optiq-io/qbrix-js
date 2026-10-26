@@ -257,7 +257,7 @@ describe("request — logging", () => {
     const logger = loggerSpy();
     const fetchMock = fetchOf(async () => new Response(JSON.stringify({ ok: 1 }), { status: 200 }));
     const config = resolveConfig({ fetch: fetchMock, apiKey: "optiq_secret", logger });
-    await request(config, "POST", "/api/v1/agent/select", { body: { experiment_id: "e" } });
+    await request(config, "POST", "/api/v1/select", { body: { loop: "l" } });
 
     const messages = logger.debug.mock.calls.map(([m]) => m);
     expect(messages).toContain("request attempt");

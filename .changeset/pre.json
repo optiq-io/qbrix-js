@@ -1,0 +1,8 @@
+{
+  "mode": "pre",
+  "tag": "next",
+  "initialVersions": {
+    "@optiqio/qbrix": "0.4.0"
+  },
+  "changesets": []
+}
