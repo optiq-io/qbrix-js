@@ -5,6 +5,7 @@
     "@optiqio/qbrix": "0.4.0"
   },
   "changesets": [
-    "next-loops-request-path"
+    "next-loops-request-path",
+    "trusted-publishing"
   ]
 }
