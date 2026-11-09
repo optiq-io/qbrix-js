@@ -10,17 +10,18 @@ concurrency: release-${{ github.ref }}
 permissions:
   contents: write # version pr commits, git tags, github release
   pull-requests: write # open/update the "version packages" pr
-  id-token: write # oidc identity for npm provenance
+  id-token: write # oidc identity for npm trusted publishing and provenance
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # trusted publishing needs npm >= 11.5.1, which node 24 bundles.
+      # no dependency cache: a poisoned cache would run beside the oidc token.
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: 24
           registry-url: https://registry.npmjs.org
       - run: npm ci
       # gate the publish on the same checks ci enforces on prs
@@ -29,7 +30,8 @@ jobs:
       - run: npm run test
       # with pending changesets this opens/updates the "version packages" pr;
       # once that pr merges (changesets consumed) it runs `release` to publish.
-      # provenance comes from publishConfig.provenance + id-token: write above.
+      # npm authenticates with the workflow's oidc identity, matched against the
+      # trusted publisher on npmjs.com (optiq-io/qbrix-js, release.yml); no token.
       - name: version or publish
         uses: changesets/action@v1
         with:
@@ -37,4 +39,3 @@ jobs:
           publish: npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
