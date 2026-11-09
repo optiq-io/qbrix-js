@@ -1,5 +1,11 @@
 # @optiqio/qbrix
 
+## 0.5.0-next.1
+
+### Patch Changes
+
+- af50c20: Published from GitHub Actions with npm trusted publishing (OIDC) instead of a long-lived npm token. The package and its provenance are unchanged.
+
 ## 0.5.0-next.0
 
 ### Minor Changes
