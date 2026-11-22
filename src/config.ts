@@ -1,5 +1,6 @@
 import type { QbrixOptions } from "./client";
 import { type LogLevel, type QbrixLogger, consoleLogger } from "./logger";
+import type { Storage } from "./types";
 
 export interface ResolvedConfig {
   apiKey: string | undefined;
@@ -11,6 +12,14 @@ export interface ResolvedConfig {
   headers: Record<string, string>;
   logger: QbrixLogger | undefined;
   logLevel: LogLevel;
+  storage: Storage;
+  flushInterval: number;
+}
+
+const STORAGES: readonly Storage[] = ["local", "memory", "none"];
+
+export function inBrowser(): boolean {
+  return typeof window !== "undefined" && typeof document !== "undefined";
 }
 
 const LOG_LEVELS: readonly LogLevel[] = ["debug", "info", "warn", "error", "off"];
@@ -58,6 +67,8 @@ export function resolveConfig(options: QbrixOptions = {}): ResolvedConfig {
     headers: options.headers ?? {},
     logger: options.logger ?? (logLevel === "off" ? undefined : consoleLogger),
     logLevel,
+    storage: options.storage ?? (inBrowser() ? "local" : "none"),
+    flushInterval: options.flushInterval ?? (inBrowser() ? 1_000 : 0),
   };
 
   if (config.timeout <= 0) {
@@ -65,6 +76,13 @@ export function resolveConfig(options: QbrixOptions = {}): ResolvedConfig {
   }
   if (config.maxRetries < 0) {
     throw new Error(`qbrix: maxRetries must be >= 0, got ${config.maxRetries}`);
+  }
+
+  if (!STORAGES.includes(config.storage)) {
+    throw new Error(`qbrix: storage must be one of ${STORAGES.join(", ")}, got ${config.storage}`);
+  }
+  if (!(config.flushInterval >= 0)) {
+    throw new Error(`qbrix: flushInterval must be >= 0, got ${config.flushInterval}`);
   }
 
   return config;

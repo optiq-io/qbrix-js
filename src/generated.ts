@@ -274,6 +274,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/track": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Track
+         * @description an event for a metric, or a batch of up to 500, each answered in order.
+         */
+        post: operations["track_api_v1_track_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -617,6 +637,16 @@ export interface components {
             request_id?: string | null;
             /** Reason */
             reason: string;
+            /**
+             * Metric
+             * @description With a request_id: the metric the decision is for, the name track sends.
+             */
+            metric?: string | null;
+            /**
+             * Window Seconds
+             * @description With a request_id: how long the decision waits for its outcome, from now.
+             */
+            window_seconds?: number | null;
         };
         /** OutcomeRequest */
         OutcomeRequest: {
@@ -651,11 +681,69 @@ export interface components {
              */
             at: string;
         };
+        /** TrackBatchRequest */
+        TrackBatchRequest: {
+            /** Events */
+            events: components["schemas"]["TrackRequest"][];
+        };
+        /** TrackRequest */
+        TrackRequest: {
+            /**
+             * Metric
+             * @description The metric's name, as code sends it.
+             */
+            metric: string;
+            /**
+             * Value
+             * @description The outcome, valid for the metric's type.
+             */
+            value: unknown;
+            /**
+             * Decisions
+             * @description The decisions token decisions() returns. The event credits exactly the decisions in it whose loop improves the metric.
+             */
+            decisions?: unknown;
+            /**
+             * Unit
+             * @description Who or what the event happened to, the unit sent with select. Matched to its open decisions when the event carries none.
+             */
+            unit?: string | null;
+            /**
+             * Id
+             * @description Makes the event idempotent: a repeat with the same id counts once. A fresh id when absent.
+             */
+            id?: unknown;
+            /**
+             * At
+             * @description When it happened, ISO 8601 (UTC without an offset). Arrival time when absent.
+             */
+            at?: string | null;
+        };
+        /** TrackResponse */
+        TrackResponse: {
+            /** Id */
+            id: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Credited
+             * @description How many decisions the event credits; null when it waits to be matched by its unit.
+             */
+            credited: number | null;
+        };
+        /** TrackBatchResponse */
+        TrackBatchResponse: {
+            /** Results */
+            results: components["schemas"]["TrackResult"][];
+        };
         /**
          * ErrorCode
          * @enum {string}
          */
-        ErrorCode: "INTERNAL_ERROR" | "BAD_REQUEST" | "UNKNOWN_PRICE_ID" | "FEEDBACK_FAILED" | "INVALID_CONTEXT_VECTOR" | "INVALID_CONTEXT_PROPERTIES" | "INVALID_POLICY_PARAMS" | "INVALID_METRIC" | "INVALID_LOOP" | "INVALID_CONTEXT" | "INVALID_OUTCOME" | "INVALID_REQUEST_ID" | "INVALID_CURSOR" | "UNAUTHORIZED" | "INVALID_TOKEN" | "INVALID_API_KEY" | "FORBIDDEN" | "INSUFFICIENT_SCOPES" | "PLAN_TIER_REQUIRED" | "EMAIL_NOT_VERIFIED" | "SIGNUP_CLOSED" | "LEARNER_EXPERIMENT_DELETE_FORBIDDEN" | "NOT_FOUND" | "POOL_NOT_FOUND" | "EXPERIMENT_NOT_FOUND" | "USER_NOT_FOUND" | "GATE_NOT_FOUND" | "METRIC_NOT_FOUND" | "LOOP_NOT_FOUND" | "CYCLE_NOT_FOUND" | "CONFLICT" | "USER_ALREADY_EXISTS" | "API_KEY_LIMIT_REACHED" | "EXPERIMENT_LIMIT_REACHED" | "GATE_ALREADY_EXISTS" | "POOL_HAS_EXPERIMENTS" | "CONTEXT_SCHEMA_IMMUTABLE" | "CONTEXT_DIM_IMMUTABLE" | "EXPERIMENT_RUNNING" | "METRIC_NAME_TAKEN" | "LOOP_KEY_TAKEN" | "LOOP_NOT_DRAFT" | "LOOP_NOT_PAUSED" | "UNPROCESSABLE_ENTITY" | "INVALID_IDENTITY" | "RATE_LIMITED" | "INVITE_LIMIT_EXCEEDED" | "USAGE_LIMIT_EXCEEDED" | "POOL_CREATION_FAILED" | "EXPERIMENT_CREATION_FAILED" | "SELECTION_FAILED" | "SERVICE_UNAVAILABLE";
+        ErrorCode: "INTERNAL_ERROR" | "BAD_REQUEST" | "UNKNOWN_PRICE_ID" | "FEEDBACK_FAILED" | "INVALID_CONTEXT_VECTOR" | "INVALID_CONTEXT_PROPERTIES" | "INVALID_POLICY_PARAMS" | "INVALID_METRIC" | "INVALID_LOOP" | "INVALID_CONTEXT" | "INVALID_OUTCOME" | "INVALID_REQUEST_ID" | "INVALID_DECISIONS" | "INVALID_CURSOR" | "INVALID_SUMMARY_RANGE" | "UNAUTHORIZED" | "INVALID_TOKEN" | "INVALID_API_KEY" | "FORBIDDEN" | "INSUFFICIENT_SCOPES" | "PLAN_TIER_REQUIRED" | "EMAIL_NOT_VERIFIED" | "SIGNUP_CLOSED" | "LEARNER_EXPERIMENT_DELETE_FORBIDDEN" | "CHANGE_ANSWER_FORBIDDEN" | "CONNECTION_LEVELS_FORBIDDEN" | "NOT_FOUND" | "POOL_NOT_FOUND" | "EXPERIMENT_NOT_FOUND" | "USER_NOT_FOUND" | "GATE_NOT_FOUND" | "METRIC_NOT_FOUND" | "LOOP_NOT_FOUND" | "CYCLE_NOT_FOUND" | "CHANGE_NOT_FOUND" | "CONNECTION_NOT_FOUND" | "PIN_TARGET_NOT_FOUND" | "OAUTH_REQUEST_NOT_FOUND" | "WEBHOOK_NOT_FOUND" | "CONFLICT" | "USER_ALREADY_EXISTS" | "API_KEY_LIMIT_REACHED" | "EXPERIMENT_LIMIT_REACHED" | "GATE_ALREADY_EXISTS" | "POOL_HAS_EXPERIMENTS" | "CONTEXT_SCHEMA_IMMUTABLE" | "CONTEXT_DIM_IMMUTABLE" | "EXPERIMENT_RUNNING" | "METRIC_NAME_TAKEN" | "METRIC_IN_USE" | "LOOP_KEY_TAKEN" | "LOOP_NOT_DRAFT" | "LOOP_NOT_PAUSED" | "LOOP_NOT_LIVE" | "LOOP_NOT_COMMITTED" | "LOOP_NOT_PAUSABLE" | "LOOP_NOT_RETIRABLE" | "LOOP_NOT_CYCLABLE" | "LOOP_RETIRED" | "CHANGE_NOT_UNDOABLE" | "CHANGE_ANSWERED" | "CHANGE_NO_LONGER_APPLIES" | "UNPROCESSABLE_ENTITY" | "INVALID_IDENTITY" | "INVALID_WEBHOOK_URL" | "RATE_LIMITED" | "INVITE_LIMIT_EXCEEDED" | "USAGE_LIMIT_EXCEEDED" | "POOL_CREATION_FAILED" | "EXPERIMENT_CREATION_FAILED" | "SELECTION_FAILED" | "SERVICE_UNAVAILABLE";
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -784,6 +872,19 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * TrackResult
+         * @description one event's result in a batch: what was recorded, or why it wasn't.
+         */
+        TrackResult: {
+            /** Id */
+            id?: string | null;
+            /** At */
+            at?: string | null;
+            /** Credited */
+            credited?: number | null;
+            error?: components["schemas"]["TrackError"] | null;
+        };
         /** PolicyParamResponse */
         PolicyParamResponse: {
             /** Name */
@@ -800,6 +901,13 @@ export interface components {
             constraints: {
                 [key: string]: number;
             };
+        };
+        /** TrackError */
+        TrackError: {
+            /** Code */
+            code: string;
+            /** Detail */
+            detail: string;
         };
     };
     responses: never;
@@ -2925,6 +3033,111 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OutcomeResponse"];
+                };
+            };
+            /** @description bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description service unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    track_api_v1_track_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackBatchRequest"] | components["schemas"]["TrackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackResponse"] | components["schemas"]["TrackBatchResponse"];
                 };
             };
             /** @description bad request */

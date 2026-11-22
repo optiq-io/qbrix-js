@@ -14,7 +14,7 @@
 > [!WARNING]
 > **This is a pre-release for qbrix next.** It speaks only to a qbrix server with next switched on (`PROXY_NEXT_ENABLED=true`), and it can break between phases. `npm install @optiqio/qbrix` keeps installing the stable 0.4.x.
 
-Built against **qbrix next · phase 1 (Skeleton)**, server [`optiq-io/qbrix@372219e`](https://github.com/optiq-io/qbrix/commit/372219e).
+Built against **qbrix next · phase 2 (Full story)**, server [`optiq-io/qbrix#147`](https://github.com/optiq-io/qbrix/pull/147) and later.
 
 A tiny, isomorphic SDK for the request path: ask a loop for a decision, render it, and report what happened. Works in the browser, Node 18+, Deno, Bun, and edge runtimes, with **zero runtime dependencies**.
 
@@ -80,23 +80,59 @@ export QBRIX_API_KEY="optiq_..."
 | Helm chart | your ingress origin, e.g. `https://qbrix.example.com` |
 | `make dev` from the qbrix repository | `http://localhost:8080` |
 
-## Use it server-side
+## Credit what happens later: `track`
 
-> [!IMPORTANT]
-> Your API key (`optiq_…`) is a **secret**. The SDK sends it as an `X-API-Key` header, so anywhere the client runs, the key goes too. **Bundling it into browser code exposes it to every visitor.** Run `qbrix` on a server (route handler, edge function, backend) and keep the key in an environment variable. Have the browser call _your_ endpoint, not qbrix directly.
+An outcome often happens somewhere else: another page, an order webhook, a backend job. `track(metric, value, options?)` sends an event for a metric, and qbrix credits the decisions it belongs to.
+
+**In the browser**, the client remembers the decisions it served, the latest per loop, until each one's window closes. Every `track` carries the ones made for its metric, on any page of the site and after a reload:
 
 ```ts
-// edge / route handler — runs on the server
+await qbrix.select("headline", { unit: visitorId });
+
+// later, on the cart page
+qbrix.track("add_to_cart", 1);
+```
+
+Events wait up to a second and go out together. When the page is hidden or left, the queue is sent at once with `keepalive`, so an event sent just before navigating away still arrives.
+
+**To credit an order or a payment**, carry the decisions to your server and send `track` from there:
+
+```ts
+// in the browser, at checkout
+const decisions = qbrix.decisions("purchase");   // put it in the cart, order or payment metadata
+
+// in the order webhook
+await qbrix.track("purchase", 1, { decisions, id: order.id });
+```
+
+`decisions(metric)` returns only the decisions made for that metric. Each one is about 115 characters, so four fit in a 500-character payment metadata value.
+
+**For events that never passed through the browser**, send the `unit` the decision was made for: `track("revenue", 49, { unit: customerId })`.
+
+### Consent
+
+The browser stores decision ids and their loops in `localStorage`, and no personal data. Whether your visitors' consent covers that is your app's call. Until it does, keep decisions for the life of the page only, and switch once consent is given:
+
+```ts
+const qbrix = new Qbrix({ apiKey, storage: "memory" });
+
+onConsent(() => qbrix.setStorage("local"));
+```
+
+`setStorage("memory")` or `setStorage("none")` removes them from the device again.
+
+## Keys in the browser and on servers
+
+With next switched on, an API key reaches only `select`, `outcome` and `track`, so a page can hold one. Anyone can read a key in a page, though, and send events with it. Keep revenue and other events you can't let a visitor fake on your server, with a key from an environment variable:
+
+```ts
+// route handler — runs on the server
 import { Qbrix } from "@optiqio/qbrix";
 
 const qbrix = new Qbrix({ apiKey: process.env.QBRIX_API_KEY });
-
-export default async function handler(req: Request): Promise<Response> {
-  const { userId } = await req.json();
-  const { option, requestId } = await qbrix.select("checkout-headline", { unit: userId });
-  return Response.json({ option, requestId });
-}
 ```
+
+Outside a browser the client remembers nothing (`storage: "none"`), and the events of one turn of the event loop go out together, up to 500 per request. Await `flush()` before a script exits.
 
 ## API
 
@@ -113,6 +149,8 @@ export default async function handler(req: Request): Promise<Response> {
 | `headers` | `Record<string, string>` | `{}` | — |
 | `logger` | `QbrixLogger` | console (when a level is active) | — |
 | `logLevel` | `LogLevel` | `"off"` | `QBRIX_LOG`, `QBRIX_DEBUG` |
+| `storage` | `"local" \| "memory" \| "none"` | `"local"` in a browser, `"none"` elsewhere | — |
+| `flushInterval` | `number` (ms) | `1000` in a browser, `0` elsewhere | — |
 
 Resolution order per option: explicit argument → environment variable → default.
 
@@ -168,6 +206,37 @@ interface Outcome {
 ```
 
 Each call carries an event `id`. The SDK mints one per call when you don't pass it, and keeps it across that call's retries, so a retried outcome counts once. Pass your own `id` when the same outcome can be reported from more than one place. An invalid value throws a `BadRequestError` whose `detail` names the rule (e.g. `a conversion is 0 or 1, got 2`). Only `select` answers offline: `outcome` throws when qbrix can't be reached.
+
+### `track(metric, value, options?)`
+
+```ts
+track(metric: string, value: number, options?: TrackOptions): Promise<Tracked | null>
+```
+
+```ts
+interface TrackOptions {
+  decisions?: string | null;  // a token from decisions(); the remembered ones for the metric when absent
+  unit?: string;              // who it happened to, for events that carry no decisions
+  id?: string;                // makes the event count once; minted by the SDK when absent
+  at?: Date | number;         // when it happened; the time qbrix receives it when absent
+}
+
+interface Tracked {
+  id: string;
+  at: Date;
+  credited: number | null;    // decisions credited; null when it waits to be matched by its unit
+}
+```
+
+With no decisions to carry and no `unit`, `track` sends nothing and resolves `null`, so a page can call it before any decision was served. An event qbrix refuses rejects with its own error, e.g. a `NotFoundError` with code `METRIC_NOT_FOUND`; the rest of its batch is unaffected.
+
+### `decisions(metric?)`
+
+The decisions token: the remembered decisions, only those made for `metric` when given, joined into one string. `null` when there are none. Treat it as opaque.
+
+### `setStorage(storage)` and `flush()`
+
+`setStorage` switches where decisions are remembered. `flush()` sends every queued event now and settles when qbrix has answered.
 
 ### Errors
 

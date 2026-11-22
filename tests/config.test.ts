@@ -18,7 +18,23 @@ describe("resolveConfig", () => {
       headers: {},
       logger: undefined,
       logLevel: "off",
+      storage: "none",
+      flushInterval: 0,
     });
+  });
+
+  it("remembers decisions and waits a second between sends in a browser", () => {
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("document", {});
+    try {
+      expect(resolveConfig()).toMatchObject({ storage: "local", flushInterval: 1_000 });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("rejects a negative flushInterval", () => {
+    expect(() => resolveConfig({ flushInterval: -1 })).toThrow(/flushInterval/);
   });
 
   it("uses explicit args over defaults", () => {

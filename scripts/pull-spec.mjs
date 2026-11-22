@@ -3,8 +3,8 @@
 // the only step that needs a running backend — generation (`npm run generate`)
 // works offline from the committed spec/proxysvc.openapi.json.
 //
-// the spec is filtered to the surface this sdk wraps: the request path (select and
-// outcome, served only with the server's next switch on, PROXY_NEXT_ENABLED=true) plus
+// the spec is filtered to the surface this sdk wraps: the request path (select,
+// outcome and track, served only with the server's next switch on, PROXY_NEXT_ENABLED=true) plus
 // the experiment/pool/policy/gate management routes (the qbrix/admin entry point). auth
 // internals, enterprise billing/insight/event routes, and runtime health probes are
 // deliberately excluded — they are not part of the public sdk and should not be
@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 const ALLOWED_PATH_PREFIXES = [
   "/api/v1/select",
   "/api/v1/outcome",
+  "/api/v1/track",
   "/api/v1/experiments",
   "/api/v1/pools",
   "/api/v1/policies",

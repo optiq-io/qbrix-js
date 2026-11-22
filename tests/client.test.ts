@@ -284,3 +284,129 @@ describe("Qbrix.outcome", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe("Qbrix.track and decisions()", () => {
+  function server(answers: Record<string, unknown>[]) {
+    let selects = 0;
+    return fetchOf(async (url, init) => {
+      if (url.endsWith("/api/v1/select")) return json(answers[selects++]);
+      const { events } = JSON.parse(init.body as string) as { events: { id: string }[] };
+      return json(
+        { results: events.map((e) => ({ id: e.id, at: "2026-11-22T10:00:00Z", credited: 1 })) },
+        202,
+      );
+    });
+  }
+
+  function decided(loop: string, metric: string, requestId: string) {
+    return {
+      option: { key: "a", name: "A", config: {} },
+      request_id: requestId,
+      reason: "live",
+      metric,
+      window_seconds: 3600,
+      loop,
+    };
+  }
+
+  function tracked(fetchMock: typeof fetch): Record<string, unknown>[] {
+    return calls(fetchMock)
+      .filter(([url]) => url.endsWith("/api/v1/track"))
+      .flatMap(([, init]) => (JSON.parse(init.body as string) as { events: [] }).events);
+  }
+
+  it("attaches the remembered decisions made for the event's metric", async () => {
+    const fetchMock = server([
+      decided("headline", "add_to_cart", "rid-1"),
+      decided("button", "purchase", "rid-2"),
+    ]);
+    const qbrix = new Qbrix({ fetch: fetchMock, storage: "memory" });
+    await qbrix.select("headline", { unit: "u" });
+    await qbrix.select("button", { unit: "u" });
+
+    const result = await qbrix.track("purchase", 1, { id: "order-1" });
+
+    expect(tracked(fetchMock)).toEqual([
+      { metric: "purchase", value: 1, id: "order-1", decisions: "rid-2" },
+    ]);
+    expect(result).toEqual({ id: "order-1", at: new Date("2026-11-22T10:00:00Z"), credited: 1 });
+  });
+
+  it("returns the token, for one metric or all", async () => {
+    const fetchMock = server([
+      decided("headline", "add_to_cart", "rid-1"),
+      decided("button", "purchase", "rid-2"),
+    ]);
+    const qbrix = new Qbrix({ fetch: fetchMock, storage: "memory" });
+    await qbrix.select("headline", { unit: "u" });
+    await qbrix.select("button", { unit: "u" });
+
+    expect(qbrix.decisions("purchase")).toBe("rid-2");
+    expect(qbrix.decisions()).toBe("rid-1.rid-2");
+    expect(qbrix.decisions("signup")).toBeNull();
+  });
+
+  it("remembers nothing for a fallback answer", async () => {
+    const fetchMock = server([
+      { option: { key: "a", name: "A", config: {} }, request_id: null, reason: "draft" },
+    ]);
+    const qbrix = new Qbrix({ fetch: fetchMock, storage: "memory" });
+    await qbrix.select("headline", { unit: "u" });
+
+    expect(qbrix.decisions()).toBeNull();
+  });
+
+  it("sends a carried token as it is, on a server that remembers nothing", async () => {
+    const fetchMock = server([decided("button", "purchase", "rid-2")]);
+    const qbrix = new Qbrix({ fetch: fetchMock });
+    await qbrix.select("button", { unit: "u" });
+    expect(qbrix.decisions()).toBeNull();
+
+    await qbrix.track("purchase", 1, { decisions: "rid-1.rid-2" });
+
+    expect(tracked(fetchMock)[0]?.decisions).toBe("rid-1.rid-2");
+  });
+
+  it("sends a unit-only event", async () => {
+    const fetchMock = server([]);
+    await new Qbrix({ fetch: fetchMock }).track("purchase", 30, {
+      unit: "customer-7",
+      at: Date.UTC(2026, 10, 22),
+    });
+
+    const [event] = tracked(fetchMock);
+    expect(event).toMatchObject({ unit: "customer-7", at: "2026-11-22T00:00:00.000Z" });
+    expect(event?.decisions).toBeUndefined();
+    expect(typeof event?.id).toBe("string");
+  });
+
+  it("resolves null and sends nothing with neither decisions nor a unit", async () => {
+    const fetchMock = server([]);
+    await expect(new Qbrix({ fetch: fetchMock }).track("purchase", 1)).resolves.toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps one id across retries", async () => {
+    let attempts = 0;
+    const fetchMock = fetchOf(async (_url, init) => {
+      if (attempts++ === 0) return new Response("", { status: 503 });
+      const { events } = JSON.parse(init.body as string) as { events: { id: string }[] };
+      return json(
+        { results: events.map((e) => ({ id: e.id, at: "2026-11-22T10:00:00Z", credited: null })) },
+        202,
+      );
+    });
+    vi.useFakeTimers();
+    const sent = new Qbrix({ fetch: fetchMock, maxRetries: 1 }).track("purchase", 1, { unit: "u" });
+    await vi.runAllTimersAsync();
+    await sent;
+    vi.useRealTimers();
+
+    const [first, second] = bodies(fetchMock) as { events: { id: string }[] }[];
+    expect(first?.events[0]?.id).toBe(second?.events[0]?.id);
+  });
+
+  it("rejects an unknown storage", () => {
+    expect(() => new Qbrix({ storage: "cookie" as never })).toThrow(/storage/);
+  });
+});

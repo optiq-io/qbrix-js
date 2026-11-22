@@ -18,6 +18,8 @@ export interface RequestOptions {
   timeout?: number;
   /** overrides `config.maxRetries` for this call only. */
   maxRetries?: number;
+  /** lets the request outlive the page, for a flush on page hide. */
+  keepalive?: boolean;
 }
 
 const RETRY_BASE_DELAY_MS = 500;
@@ -59,7 +61,13 @@ export async function request<T>(
 
     let response: Response;
     try {
-      response = await fetchImpl(url, { method, headers, body, signal });
+      response = await fetchImpl(url, {
+        method,
+        headers,
+        body,
+        signal,
+        ...(options.keepalive && { keepalive: true }),
+      });
     } catch (err) {
       // caller-initiated abort takes precedence and propagates unchanged
       if (options.signal?.aborted) throw options.signal.reason ?? err;
