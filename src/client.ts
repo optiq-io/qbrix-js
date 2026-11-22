@@ -15,11 +15,24 @@ import type { LogLevel, QbrixLogger } from "./logger";
 import {
   fromOutcomeResponse,
   fromSelectResponse,
+  fromTracked,
   toOutcomeRequest,
   toSelectRequest,
+  toTrackEvent,
 } from "./mapper";
+import { DecisionMemory } from "./memory";
+import { EventQueue } from "./queue";
 import { request } from "./transport";
-import type { Context, Decision, Outcome, OutcomeOptions, Settings } from "./types";
+import type {
+  Context,
+  Decision,
+  Outcome,
+  OutcomeOptions,
+  Settings,
+  Storage,
+  TrackOptions,
+  Tracked,
+} from "./types";
 import { VERSION } from "./version";
 
 // failures that mean "qbrix is unreachable or unhealthy right now", as opposed to a
@@ -59,6 +72,12 @@ export interface QbrixOptions {
   logger?: QbrixLogger;
   /** logging verbosity. defaults to "off" (silent); also read from QBRIX_LOG / QBRIX_DEBUG. */
   logLevel?: LogLevel;
+  /** where the decisions this client served are remembered, for `track` and
+   *  `decisions()`. "local" in a browser, "none" elsewhere. */
+  storage?: Storage;
+  /** how long `track` events wait to be sent together, in ms. 1000 in a browser,
+   *  0 elsewhere (events of the same turn still go together). */
+  flushInterval?: number;
 }
 
 export function buildHeaders(config: ResolvedConfig): Record<string, string> {
@@ -78,9 +97,16 @@ export function buildHeaders(config: ResolvedConfig): Record<string, string> {
 
 export class Qbrix {
   readonly config: ResolvedConfig;
+  private readonly memory: DecisionMemory;
+  private readonly events: EventQueue;
 
   constructor(options: QbrixOptions = {}) {
     this.config = resolveConfig(options);
+    this.memory = new DecisionMemory(
+      this.config.storage,
+      `${this.config.baseUrl}|${this.config.apiKey ?? ""}`,
+    );
+    this.events = new EventQueue(this.config);
   }
 
   async select(loop: string, context: Context, settings: Settings = {}): Promise<Decision> {
@@ -94,6 +120,14 @@ export class Qbrix {
       );
       if (wire === undefined) {
         throw new QbrixError("qbrix: select returned no response body");
+      }
+      if (wire.request_id && wire.metric && typeof wire.window_seconds === "number") {
+        this.memory.remember({
+          loop,
+          metric: wire.metric,
+          requestId: wire.request_id,
+          expiresAt: Date.now() + wire.window_seconds * 1000,
+        });
       }
       return fromSelectResponse(wire);
     } catch (err) {
@@ -123,5 +157,39 @@ export class Qbrix {
       throw new QbrixError("qbrix: outcome returned no response body");
     }
     return fromOutcomeResponse(wire);
+  }
+
+  /** an event for a metric. it credits the decisions it carries, the ones this
+   *  client remembers for the metric by default, or else waits to be matched by
+   *  its unit. resolves null, sending nothing, when it has neither. */
+  async track(metric: string, value: number, options: TrackOptions = {}): Promise<Tracked | null> {
+    const decisions = options.decisions || this.decisions(metric) || undefined;
+    if (decisions === undefined && options.unit === undefined) return null;
+    const id = options.id ?? crypto.randomUUID();
+    const event = toTrackEvent(metric, value, id, {
+      decisions,
+      unit: options.unit,
+      at: options.at,
+    });
+    return fromTracked(await this.events.push(event));
+  }
+
+  /** the decisions token: the decisions this client served and still remembers,
+   *  only those made for `metric` when given, for code to carry to `track` on a
+   *  server. null when there are none. */
+  decisions(metric?: string): string | null {
+    const remembered = this.memory.current(metric);
+    return remembered.length > 0 ? remembered.map((entry) => entry.requestId).join(".") : null;
+  }
+
+  /** switches where decisions are remembered, e.g. to "local" once the visitor
+   *  consents. "memory" and "none" remove them from the device. */
+  setStorage(storage: Storage): void {
+    this.memory.use(storage);
+  }
+
+  /** sends every queued `track` event now; await it before a script exits. */
+  flush(): Promise<void> {
+    return this.events.flush();
   }
 }

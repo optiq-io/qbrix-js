@@ -1,11 +1,13 @@
 import { QbrixError } from "./errors";
 import type { components } from "./generated";
-import type { Context, Decision, Outcome } from "./types";
+import type { TrackedWire } from "./queue";
+import type { Context, Decision, Outcome, Tracked } from "./types";
 
 type WireSelectRequest = components["schemas"]["SelectRequest"];
 type WireSelectResponse = components["schemas"]["SelectResponse"];
 type WireOutcomeRequest = components["schemas"]["OutcomeRequest"];
 type WireOutcomeResponse = components["schemas"]["OutcomeResponse"];
+type WireTrackEvent = components["schemas"]["TrackRequest"];
 
 const UNIT_MAX_LENGTH = 256;
 
@@ -52,4 +54,24 @@ export function toOutcomeRequest(
 
 export function fromOutcomeResponse(wire: WireOutcomeResponse): Outcome {
   return { id: wire.id, at: new Date(wire.at) };
+}
+
+export function toTrackEvent(
+  metric: string,
+  value: number,
+  id: string,
+  options: { decisions?: string; unit?: string; at?: Date | number },
+): WireTrackEvent {
+  return {
+    metric,
+    value,
+    id,
+    ...(options.decisions !== undefined && { decisions: options.decisions }),
+    ...(options.unit !== undefined && { unit: options.unit }),
+    ...(options.at !== undefined && { at: new Date(options.at).toISOString() }),
+  };
+}
+
+export function fromTracked(wire: TrackedWire): Tracked {
+  return { id: wire.id, at: new Date(wire.at), credited: wire.credited };
 }

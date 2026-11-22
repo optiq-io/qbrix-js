@@ -1,0 +1,37 @@
+<!doctype html>
+<!--
+  The checkout page. track() carries the decisions served on the product page,
+  even after a reload, as long as the visitor accepted storage there. Placing the
+  order hands decisions("purchase") to the server, which sends track with it (see
+  examples/server-token.ts).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Checkout</title>
+    <script type="importmap">
+      { "imports": { "@optiqio/qbrix": "/dist/index.js" } }
+    </script>
+  </head>
+  <body>
+    <p><button id="add">Add to cart</button></p>
+    <p><button id="order">Place order</button></p>
+    <pre id="out"></pre>
+    <script type="module">
+      import { qbrix } from "./client.js";
+
+      const out = document.querySelector("#out");
+
+      document.querySelector("#add").onclick = () => {
+        qbrix.track("add_to_cart", 1);
+        // leaving at once is fine: the queue is flushed as the page hides
+        location.href = "index.html";
+      };
+
+      document.querySelector("#order").onclick = () => {
+        const decisions = qbrix.decisions("purchase");
+        out.textContent = `send to your order endpoint:\nQBRIX_DECISIONS=${decisions}`;
+      };
+    </script>
+  </body>
+</html>

@@ -24,6 +24,9 @@ export type {
   Settings,
   OutcomeOptions,
   Outcome,
+  TrackOptions,
+  Tracked,
+  Storage,
   ErrorCode,
 } from "./types";
 export type { QbrixLogger, LogLevel } from "./logger";

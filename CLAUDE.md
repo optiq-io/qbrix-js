@@ -38,7 +38,7 @@ the wire format the SDK maps over.
 - **HTTP/`fetch` only**, **zero runtime dependencies**. Isomorphic: browser,
   Node 18+, Deno, Bun, edge. Use only universal primitives (`fetch`,
   `AbortController`, `crypto.randomUUID()`); guard any `process` access.
-- **Flat request-path API**: `qbrix.select(loop, context, settings)` / `qbrix.outcome(requestId, value)`. On the `next` branch these speak to the qbrix next routes (`/api/v1/select`, `/api/v1/outcome`), which exist only with the server's `PROXY_NEXT_ENABLED=true`.
+- **Flat request-path API**: `qbrix.select(loop, context, settings)` / `qbrix.outcome(requestId, value)` / `qbrix.track(metric, value, options)` / `qbrix.decisions(metric?)`. On the `next` branch these speak to the qbrix next routes (`/api/v1/select`, `/api/v1/outcome`, `/api/v1/track`), which exist only with the server's `PROXY_NEXT_ENABLED=true`.
 - **camelCase public types**, mapped over the snake_case wire shape.
 - Management/CRUD is a separate `qbrix/admin` entry point (1.1) — never on the
   hot path.
@@ -61,6 +61,8 @@ the [qbrix.js SDK — MVP Spec](https://linear.app/optiqio/document/qbrixjs-sdk-
 src/
 ├── index.ts      # public exports
 ├── client.ts     # Qbrix
+├── memory.ts     # the decisions a browser served, per loop, until their window closes
+├── queue.ts      # track events, batched; flushed with keepalive on page hide
 ├── config.ts     # option + env resolution (OPT-130)
 ├── transport.ts  # fetch wrapper: retry/backoff, timeout, error mapping (OPT-131)
 ├── errors.ts     # QbrixError hierarchy (OPT-131)

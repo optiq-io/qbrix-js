@@ -2685,6 +2685,144 @@
           }
         }
       }
+    },
+    "/api/v1/track": {
+      "post": {
+        "tags": [
+          "track"
+        ],
+        "summary": "Track",
+        "description": "an event for a metric, or a batch of up to 500, each answered in order.",
+        "operationId": "track_api_v1_track_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/TrackBatchRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TrackRequest"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TrackResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TrackBatchResponse"
+                    }
+                  ],
+                  "title": "Response Track Api V1 Track Post"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3584,6 +3722,30 @@
           "reason": {
             "type": "string",
             "title": "Reason"
+          },
+          "metric": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric",
+            "description": "With a request_id: the metric the decision is for, the name track sends."
+          },
+          "window_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Seconds",
+            "description": "With a request_id: how long the decision waits for its outcome, from now."
           }
         },
         "type": "object",
@@ -3648,6 +3810,126 @@
         ],
         "title": "OutcomeResponse"
       },
+      "TrackBatchRequest": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/TrackRequest"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Events"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "events"
+        ],
+        "title": "TrackBatchRequest"
+      },
+      "TrackRequest": {
+        "properties": {
+          "metric": {
+            "type": "string",
+            "title": "Metric",
+            "description": "The metric's name, as code sends it."
+          },
+          "value": {
+            "title": "Value",
+            "description": "The outcome, valid for the metric's type."
+          },
+          "decisions": {
+            "title": "Decisions",
+            "description": "The decisions token decisions() returns. The event credits exactly the decisions in it whose loop improves the metric."
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit",
+            "description": "Who or what the event happened to, the unit sent with select. Matched to its open decisions when the event carries none."
+          },
+          "id": {
+            "title": "Id",
+            "description": "Makes the event idempotent: a repeat with the same id counts once. A fresh id when absent."
+          },
+          "at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At",
+            "description": "When it happened, ISO 8601 (UTC without an offset). Arrival time when absent."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metric",
+          "value"
+        ],
+        "title": "TrackRequest"
+      },
+      "TrackResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "credited": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credited",
+            "description": "How many decisions the event credits; null when it waits to be matched by its unit."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "at",
+          "credited"
+        ],
+        "title": "TrackResponse"
+      },
+      "TrackBatchResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/TrackResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "title": "TrackBatchResponse"
+      },
       "ErrorCode": {
         "enum": [
           "INTERNAL_ERROR",
@@ -3662,7 +3944,9 @@
           "INVALID_CONTEXT",
           "INVALID_OUTCOME",
           "INVALID_REQUEST_ID",
+          "INVALID_DECISIONS",
           "INVALID_CURSOR",
+          "INVALID_SUMMARY_RANGE",
           "UNAUTHORIZED",
           "INVALID_TOKEN",
           "INVALID_API_KEY",
@@ -3672,6 +3956,8 @@
           "EMAIL_NOT_VERIFIED",
           "SIGNUP_CLOSED",
           "LEARNER_EXPERIMENT_DELETE_FORBIDDEN",
+          "CHANGE_ANSWER_FORBIDDEN",
+          "CONNECTION_LEVELS_FORBIDDEN",
           "NOT_FOUND",
           "POOL_NOT_FOUND",
           "EXPERIMENT_NOT_FOUND",
@@ -3680,6 +3966,11 @@
           "METRIC_NOT_FOUND",
           "LOOP_NOT_FOUND",
           "CYCLE_NOT_FOUND",
+          "CHANGE_NOT_FOUND",
+          "CONNECTION_NOT_FOUND",
+          "PIN_TARGET_NOT_FOUND",
+          "OAUTH_REQUEST_NOT_FOUND",
+          "WEBHOOK_NOT_FOUND",
           "CONFLICT",
           "USER_ALREADY_EXISTS",
           "API_KEY_LIMIT_REACHED",
@@ -3690,11 +3981,22 @@
           "CONTEXT_DIM_IMMUTABLE",
           "EXPERIMENT_RUNNING",
           "METRIC_NAME_TAKEN",
+          "METRIC_IN_USE",
           "LOOP_KEY_TAKEN",
           "LOOP_NOT_DRAFT",
           "LOOP_NOT_PAUSED",
+          "LOOP_NOT_LIVE",
+          "LOOP_NOT_COMMITTED",
+          "LOOP_NOT_PAUSABLE",
+          "LOOP_NOT_RETIRABLE",
+          "LOOP_NOT_CYCLABLE",
+          "LOOP_RETIRED",
+          "CHANGE_NOT_UNDOABLE",
+          "CHANGE_ANSWERED",
+          "CHANGE_NO_LONGER_APPLIES",
           "UNPROCESSABLE_ENTITY",
           "INVALID_IDENTITY",
+          "INVALID_WEBHOOK_URL",
           "RATE_LIMITED",
           "INVITE_LIMIT_EXCEEDED",
           "USAGE_LIMIT_EXCEEDED",
@@ -4021,6 +4323,57 @@
         ],
         "title": "SelectedOption"
       },
+      "TrackResult": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "credited": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credited"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrackError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "TrackResult",
+        "description": "one event's result in a batch: what was recorded, or why it wasn't."
+      },
       "PolicyParamResponse": {
         "properties": {
           "name": {
@@ -4066,6 +4419,24 @@
           "constraints"
         ],
         "title": "PolicyParamResponse"
+      },
+      "TrackError": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "detail"
+        ],
+        "title": "TrackError"
       }
     },
     "securitySchemes": {

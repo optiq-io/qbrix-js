@@ -1,0 +1,41 @@
+<!doctype html>
+<!--
+  A product page: ask a loop for the headline, then go to checkout on another page.
+
+  Needs qbrix with next switched on and two live loops: "headline", improving
+  add_to_cart, and "checkout-button", improving purchase. From the repository root:
+
+    npm run build && npx serve .      # or any static server
+    open http://localhost:3000/examples/browser/
+
+  The import map points at the local build; in an app, your bundler resolves it.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Product</title>
+    <script type="importmap">
+      { "imports": { "@optiqio/qbrix": "/dist/index.js" } }
+    </script>
+  </head>
+  <body>
+    <h1 id="headline">…</h1>
+    <p><button id="consent">Accept storage</button></p>
+    <p><a href="checkout.html">Go to checkout</a></p>
+    <script type="module">
+      import { giveConsent, qbrix, unit } from "./client.js";
+
+      const headline = await qbrix.select(
+        "headline",
+        { unit },
+        { offline: { key: "control", config: { text: "Our best seller" } } },
+      );
+      document.querySelector("#headline").textContent = headline.option.config.text;
+
+      // the checkout page credits this decision with no plumbing
+      await qbrix.select("checkout-button", { unit });
+
+      document.querySelector("#consent").onclick = giveConsent;
+    </script>
+  </body>
+</html>

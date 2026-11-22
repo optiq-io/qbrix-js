@@ -18,7 +18,9 @@ export type ErrorCode =
   | "INVALID_CONTEXT"
   | "INVALID_OUTCOME"
   | "INVALID_REQUEST_ID"
+  | "INVALID_DECISIONS"
   | "INVALID_CURSOR"
+  | "INVALID_SUMMARY_RANGE"
   | "UNAUTHORIZED"
   | "INVALID_TOKEN"
   | "INVALID_API_KEY"
@@ -28,6 +30,8 @@ export type ErrorCode =
   | "EMAIL_NOT_VERIFIED"
   | "SIGNUP_CLOSED"
   | "LEARNER_EXPERIMENT_DELETE_FORBIDDEN"
+  | "CHANGE_ANSWER_FORBIDDEN"
+  | "CONNECTION_LEVELS_FORBIDDEN"
   | "NOT_FOUND"
   | "POOL_NOT_FOUND"
   | "EXPERIMENT_NOT_FOUND"
@@ -36,6 +40,11 @@ export type ErrorCode =
   | "METRIC_NOT_FOUND"
   | "LOOP_NOT_FOUND"
   | "CYCLE_NOT_FOUND"
+  | "CHANGE_NOT_FOUND"
+  | "CONNECTION_NOT_FOUND"
+  | "PIN_TARGET_NOT_FOUND"
+  | "OAUTH_REQUEST_NOT_FOUND"
+  | "WEBHOOK_NOT_FOUND"
   | "CONFLICT"
   | "USER_ALREADY_EXISTS"
   | "API_KEY_LIMIT_REACHED"
@@ -46,11 +55,22 @@ export type ErrorCode =
   | "CONTEXT_DIM_IMMUTABLE"
   | "EXPERIMENT_RUNNING"
   | "METRIC_NAME_TAKEN"
+  | "METRIC_IN_USE"
   | "LOOP_KEY_TAKEN"
   | "LOOP_NOT_DRAFT"
   | "LOOP_NOT_PAUSED"
+  | "LOOP_NOT_LIVE"
+  | "LOOP_NOT_COMMITTED"
+  | "LOOP_NOT_PAUSABLE"
+  | "LOOP_NOT_RETIRABLE"
+  | "LOOP_NOT_CYCLABLE"
+  | "LOOP_RETIRED"
+  | "CHANGE_NOT_UNDOABLE"
+  | "CHANGE_ANSWERED"
+  | "CHANGE_NO_LONGER_APPLIES"
   | "UNPROCESSABLE_ENTITY"
   | "INVALID_IDENTITY"
+  | "INVALID_WEBHOOK_URL"
   | "RATE_LIMITED"
   | "INVITE_LIMIT_EXCEEDED"
   | "USAGE_LIMIT_EXCEEDED"
@@ -121,4 +141,31 @@ export interface OutcomeOptions {
 export interface Outcome {
   id: string;
   at: Date;
+}
+
+/** where the browser keeps the decisions it served. `local` survives reloads and
+ *  pages of the same site; `memory` lasts the page's life, for apps waiting on
+ *  consent; `none` remembers nothing, the default outside a browser. */
+export type Storage = "local" | "memory" | "none";
+
+export interface TrackOptions {
+  /** the decisions token from `decisions()`, carried to where the event happens.
+   *  defaults to the decisions this client remembers for the metric. */
+  decisions?: string | null;
+  /** the unit the event happened to, the same one sent with `select`. */
+  unit?: string;
+  /** makes the event count once. minted by the sdk when absent, and kept across
+   *  retries. */
+  id?: string;
+  /** when it happened, as a Date or epoch milliseconds. qbrix uses the time it
+   *  receives the event when absent. */
+  at?: Date | number;
+}
+
+export interface Tracked {
+  id: string;
+  at: Date;
+  /** how many decisions the event credits; null when it waits to be matched by
+   *  its unit. */
+  credited: number | null;
 }
